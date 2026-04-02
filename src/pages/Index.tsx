@@ -1,16 +1,18 @@
 import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import Categories from "@/components/Categories";
-import FeaturedListings from "@/components/FeaturedListings";
+import HeroSection from "@/components/HeroSection";
+import AdBanner from "@/components/AdBanner";
+import NeedsFeed from "@/components/NeedsFeed";
+import FeaturedProducts from "@/components/FeaturedProducts";
 import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <Hero />
-      <Categories />
-      <FeaturedListings />
+      <HeroSection />
+      <NeedsFeed />
+      <AdBanner />
+      <FeaturedProducts />
       <Footer />
     </div>
   );
