@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Send, AtSign, Clock, AlertTriangle, Package, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Send, AtSign, Clock, AlertTriangle, Package, ShoppingBag, VideoIcon } from "lucide-react";
+import { toast } from "sonner";
+import AttachmentMenu from "@/components/chat/AttachmentMenu";
+import VoiceRecorder from "@/components/chat/VoiceRecorder";
+import LocationPicker from "@/components/chat/LocationPicker";
+import MediaPreview from "@/components/chat/MediaPreview";
 
 // Mock data
 const mockNeedThreads = [
@@ -71,7 +76,21 @@ const mockCommodityThreads = [
   },
 ];
 
-const mockConversations: Record<string, Array<{ id: string; sender: string; text: string; time: string; isMine: boolean; mention?: string }>> = {
+type MessageItem = {
+  id: string;
+  sender: string;
+  text: string;
+  time: string;
+  isMine: boolean;
+  mention?: string;
+  type?: "text" | "image" | "video" | "voice" | "location";
+  mediaUrl?: string;
+  duration?: number;
+  lat?: number;
+  lng?: number;
+};
+
+const mockConversations: Record<string, MessageItem[]> = {
   g1: [
     { id: "m1", sender: "Sarah Chen", text: "Hi! I saw your need for a web developer.", time: "10:00 AM", isMine: false },
     { id: "m2", sender: "You", text: "Yes! We need someone with React experience.", time: "10:05 AM", isMine: true },
@@ -103,12 +122,13 @@ const Messages = () => {
   const [selectedGuest, setSelectedGuest] = useState<{ id: string; name: string } | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [mentioning, setMentioning] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<{ file: File; type: "image" | "video" } | null>(null);
+  const [locationOpen, setLocationOpen] = useState(false);
 
   const handleThreadClick = (thread: typeof mockNeedThreads[0] | typeof mockCommodityThreads[0]) => {
     if (thread.status === "expired") return;
     setSelectedThread(thread);
     if (thread.guests.length === 1) {
-      // Guest view: go straight to conversation
       setSelectedGuest(thread.guests[0]);
       setView("conversation");
     } else {
@@ -130,10 +150,18 @@ const Messages = () => {
       setSelectedThread(null);
       setSelectedGuest(null);
     }
+    setAttachedFile(null);
   };
 
   const handleSend = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !attachedFile) return;
+    if (attachedFile) {
+      toast.success(`${attachedFile.type === "image" ? "Image" : "Video"} sent!`);
+      setAttachedFile(null);
+    }
+    if (newMessage.trim()) {
+      toast.success("Message sent!");
+    }
     setNewMessage("");
     setMentioning(false);
   };
@@ -143,6 +171,24 @@ const Messages = () => {
     setMentioning(val.includes("@"));
   };
 
+  const handleFileSelect = (file: File, type: "image" | "video") => {
+    setAttachedFile({ file, type });
+    toast.info(`${type === "image" ? "Image" : "Video"} attached. Send when ready.`);
+  };
+
+  const handleVoiceSend = (blob: Blob, duration: number) => {
+    toast.success(`Voice note sent (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")})`);
+  };
+
+  const handleLocationSend = (lat: number, lng: number, label: string) => {
+    toast.success(`Location shared: ${label}`);
+  };
+
+  const handleVideoCall = () => {
+    toast.info("Video call feature coming soon! This requires WebRTC setup.");
+  };
+
+  const isDraft = selectedThread?.status === "draft";
   const threads = activeTab === "needs" ? mockNeedThreads : mockCommodityThreads;
   const messages = selectedGuest ? mockConversations[selectedGuest.id] || [] : [];
 
@@ -151,6 +197,7 @@ const Messages = () => {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <main className="flex-1 flex flex-col">
+          {/* Header */}
           <div className="border-b border-border px-6 py-4">
             <div className="flex items-center gap-3">
               {view !== "list" && (
@@ -168,6 +215,11 @@ const Messages = () => {
                   {selectedThread.type === "need" ? "Need" : "Commodity"}: {selectedThread.title}
                 </Badge>
               )}
+              {view === "conversation" && (
+                <Button variant="outline" size="icon" className="ml-auto" onClick={handleVideoCall} title="Video call">
+                  <VideoIcon className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -184,7 +236,6 @@ const Messages = () => {
                       <ShoppingBag className="h-4 w-4" /> Commodities
                     </TabsTrigger>
                   </TabsList>
-
                   <TabsContent value={activeTab} className="mt-4 space-y-3">
                     {threads.length === 0 && (
                       <p className="text-center text-muted-foreground py-12">No messages yet</p>
@@ -228,7 +279,7 @@ const Messages = () => {
               </div>
             )}
 
-            {/* GUESTS VIEW (Author) */}
+            {/* GUESTS VIEW */}
             {view === "guests" && selectedThread && (
               <div className="p-6 max-w-3xl mx-auto space-y-3">
                 <p className="text-sm text-muted-foreground mb-2">
@@ -266,10 +317,10 @@ const Messages = () => {
             {/* CONVERSATION VIEW */}
             {view === "conversation" && selectedGuest && (
               <div className="flex flex-col h-full">
-                {selectedThread?.status === "draft" && (
+                {isDraft && (
                   <div className="bg-muted px-6 py-3 flex items-center gap-2 text-sm text-muted-foreground border-b border-border">
                     <AlertTriangle className="h-4 w-4 text-destructive" />
-                    This {selectedThread.type} is in draft mode. Messages are hidden and new messages won't be delivered.
+                    This {selectedThread?.type} is in draft mode. Messages are hidden and new messages won't be delivered.
                   </div>
                 )}
                 <ScrollArea className="flex-1 px-6 py-4">
@@ -302,35 +353,58 @@ const Messages = () => {
                   </div>
                 </ScrollArea>
 
+                {/* Chat Input Area */}
                 <div className="border-t border-border px-6 py-4">
-                  <div className="max-w-3xl mx-auto flex gap-2">
-                    <Button
-                      variant={mentioning ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => {
-                        setMentioning(!mentioning);
-                        setNewMessage(mentioning ? newMessage.replace(/@$/, "") : newMessage + "@");
-                      }}
-                      title="Mention someone"
-                    >
-                      <AtSign className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => handleInputChange(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                      className="flex-1"
-                      disabled={selectedThread?.status === "draft"}
-                    />
-                    <Button onClick={handleSend} disabled={!newMessage.trim() || selectedThread?.status === "draft"}>
-                      <Send className="h-4 w-4" />
-                    </Button>
+                  <div className="max-w-3xl mx-auto space-y-2">
+                    {attachedFile && (
+                      <MediaPreview
+                        file={attachedFile.file}
+                        type={attachedFile.type}
+                        onRemove={() => setAttachedFile(null)}
+                      />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <AttachmentMenu
+                        onFileSelect={handleFileSelect}
+                        onLocationShare={() => setLocationOpen(true)}
+                        disabled={isDraft}
+                      />
+                      <VoiceRecorder onSend={handleVoiceSend} disabled={isDraft} />
+                      <Button
+                        variant={mentioning ? "default" : "outline"}
+                        size="icon"
+                        onClick={() => {
+                          setMentioning(!mentioning);
+                          setNewMessage(mentioning ? newMessage.replace(/@$/, "") : newMessage + "@");
+                        }}
+                        title="Mention someone"
+                        disabled={isDraft}
+                      >
+                        <AtSign className="h-4 w-4" />
+                      </Button>
+                      <Input
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                        className="flex-1"
+                        disabled={isDraft}
+                      />
+                      <Button onClick={handleSend} disabled={(!newMessage.trim() && !attachedFile) || isDraft}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
+
+          <LocationPicker
+            open={locationOpen}
+            onOpenChange={setLocationOpen}
+            onSend={handleLocationSend}
+          />
         </main>
       </div>
     </SidebarProvider>
