@@ -157,7 +157,7 @@ const Notifications = () => {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <main className="flex-1 flex flex-col">
-          <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+          <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <Bell className="h-6 w-6 text-primary" />
               <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
