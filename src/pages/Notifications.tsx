@@ -109,7 +109,7 @@ const Notifications = () => {
         <div className="flex min-h-screen w-full bg-background">
           <AppSidebar />
           <main className="flex-1 flex flex-col">
-            <div className="border-b border-border px-6 py-4 flex items-center gap-3">
+            <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => setSelectedNotification(null)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
