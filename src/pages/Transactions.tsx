@@ -226,7 +226,7 @@ const Transactions = () => {
               </div>
 
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                 <Card>
                   <CardContent className="flex items-center gap-3 py-4">
                     <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
