@@ -205,7 +205,7 @@ const Messages = () => {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
               )}
-              <h1 className="text-2xl font-bold text-foreground">
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
                 {view === "list" && "Messages"}
                 {view === "guests" && selectedThread?.title}
                 {view === "conversation" && selectedGuest?.name}
