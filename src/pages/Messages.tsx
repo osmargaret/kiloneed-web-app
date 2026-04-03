@@ -226,7 +226,7 @@ const Messages = () => {
           <div className="flex-1 overflow-hidden">
             {/* LIST VIEW */}
             {view === "list" && (
-              <div className="p-6 max-w-3xl mx-auto space-y-4">
+              <div className="p-3 sm:p-6 max-w-3xl mx-auto space-y-4">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="w-full grid grid-cols-2">
                     <TabsTrigger value="needs" className="gap-2">
