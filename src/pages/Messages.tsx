@@ -281,7 +281,7 @@ const Messages = () => {
 
             {/* GUESTS VIEW */}
             {view === "guests" && selectedThread && (
-              <div className="p-6 max-w-3xl mx-auto space-y-3">
+              <div className="p-3 sm:p-6 max-w-3xl mx-auto space-y-3">
                 <p className="text-sm text-muted-foreground mb-2">
                   Replies categorized by guest — click to view conversation
                 </p>
