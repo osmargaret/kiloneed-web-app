@@ -54,7 +54,7 @@ const Bookmarks = () => {
           <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <Bookmark className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Bookmarks</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground">Bookmarks</h1>
               <Badge variant="secondary">{bookmarks.length} saved</Badge>
             </div>
           </div>
