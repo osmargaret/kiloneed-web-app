@@ -211,7 +211,7 @@ const Messages = () => {
                 {view === "conversation" && selectedGuest?.name}
               </h1>
               {view === "conversation" && selectedThread && (
-                <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                   {selectedThread.type === "need" ? "Need" : "Commodity"}: {selectedThread.title}
                 </Badge>
               )}
