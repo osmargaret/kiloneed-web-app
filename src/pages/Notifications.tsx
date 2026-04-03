@@ -172,7 +172,7 @@ const Notifications = () => {
             )}
           </div>
 
-          <div className="p-6 max-w-3xl mx-auto w-full space-y-4">
+          <div className="p-3 sm:p-6 max-w-3xl mx-auto w-full space-y-4">
             <Tabs value={activeCategory} onValueChange={setActiveCategory}>
               <TabsList className="w-full flex overflow-x-auto">
                 {categories.map(c => (
