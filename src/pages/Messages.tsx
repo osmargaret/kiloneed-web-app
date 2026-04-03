@@ -198,20 +198,20 @@ const Messages = () => {
         <AppSidebar />
         <main className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="border-b border-border px-6 py-4">
-            <div className="flex items-center gap-3">
+          <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {view !== "list" && (
                 <Button variant="ghost" size="icon" onClick={handleBack}>
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
               )}
-              <h1 className="text-2xl font-bold text-foreground">
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
                 {view === "list" && "Messages"}
                 {view === "guests" && selectedThread?.title}
                 {view === "conversation" && selectedGuest?.name}
               </h1>
               {view === "conversation" && selectedThread && (
-                <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                   {selectedThread.type === "need" ? "Need" : "Commodity"}: {selectedThread.title}
                 </Badge>
               )}
@@ -226,7 +226,7 @@ const Messages = () => {
           <div className="flex-1 overflow-hidden">
             {/* LIST VIEW */}
             {view === "list" && (
-              <div className="p-6 max-w-3xl mx-auto space-y-4">
+              <div className="p-3 sm:p-6 max-w-3xl mx-auto space-y-4">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="w-full grid grid-cols-2">
                     <TabsTrigger value="needs" className="gap-2">
@@ -281,7 +281,7 @@ const Messages = () => {
 
             {/* GUESTS VIEW */}
             {view === "guests" && selectedThread && (
-              <div className="p-6 max-w-3xl mx-auto space-y-3">
+              <div className="p-3 sm:p-6 max-w-3xl mx-auto space-y-3">
                 <p className="text-sm text-muted-foreground mb-2">
                   Replies categorized by guest — click to view conversation
                 </p>
@@ -323,7 +323,7 @@ const Messages = () => {
                     This {selectedThread?.type} is in draft mode. Messages are hidden and new messages won't be delivered.
                   </div>
                 )}
-                <ScrollArea className="flex-1 px-6 py-4">
+                <ScrollArea className="flex-1 px-3 sm:px-6 py-4">
                   <div className="max-w-3xl mx-auto space-y-4">
                     {messages.map((msg) => (
                       <div key={msg.id} className={`flex ${msg.isMine ? "justify-end" : "justify-start"}`}>
@@ -354,7 +354,7 @@ const Messages = () => {
                 </ScrollArea>
 
                 {/* Chat Input Area */}
-                <div className="border-t border-border px-6 py-4">
+                <div className="border-t border-border px-3 sm:px-6 py-3 sm:py-4">
                   <div className="max-w-3xl mx-auto space-y-2">
                     {attachedFile && (
                       <MediaPreview

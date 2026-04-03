@@ -52,7 +52,7 @@ function SubscriptionsSection() {
         <p className="text-sm text-muted-foreground">Add additional profiles to manage multiple businesses or identities on Kiloneed.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {profilePlans.map((plan) => (
           <Card
             key={plan.name}
@@ -383,15 +383,15 @@ const Dashboard = () => {
               </div>
 
               <Tabs defaultValue="subscriptions" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/50 h-auto">
                   <TabsTrigger value="subscriptions" className="flex items-center gap-1.5 text-xs">
-                    <CreditCard className="h-3.5 w-3.5" /> Subscriptions
+                    <CreditCard className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Subscriptions</span><span className="sm:hidden">Subs</span>
                   </TabsTrigger>
                   <TabsTrigger value="ads" className="flex items-center gap-1.5 text-xs">
                     <Megaphone className="h-3.5 w-3.5" /> Ads
                   </TabsTrigger>
                   <TabsTrigger value="groups" className="flex items-center gap-1.5 text-xs">
-                    <Users className="h-3.5 w-3.5" /> Group Dues
+                    <Users className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Group Dues</span><span className="sm:hidden">Groups</span>
                   </TabsTrigger>
                   <TabsTrigger value="kiloai" className="flex items-center gap-1.5 text-xs">
                     <Sparkles className="h-3.5 w-3.5" /> KiloAI

@@ -144,14 +144,14 @@ export default function PublicProfile() {
             {/* ── Tabs ── */}
             <div className="max-w-4xl mx-auto p-4 md:p-6">
               <Tabs defaultValue={visibleTabs[0]} className="space-y-4">
-                <TabsList className="flex flex-wrap gap-1">
+                <div className="overflow-x-auto -mx-4 px-4"><TabsList className="flex w-max gap-1 h-auto p-1">
                   {visibleTabs.includes("needs") && <TabsTrigger value="needs"><Home className="h-3.5 w-3.5 mr-1" />Needs</TabsTrigger>}
                   {visibleTabs.includes("commodities") && <TabsTrigger value="commodities"><ShoppingBag className="h-3.5 w-3.5 mr-1" />Commodities</TabsTrigger>}
                   {visibleTabs.includes("connections") && <TabsTrigger value="connections"><Users className="h-3.5 w-3.5 mr-1" />Connections</TabsTrigger>}
                   <TabsTrigger value="recommendations"><Star className="h-3.5 w-3.5 mr-1" />Recommendations</TabsTrigger>
                   <TabsTrigger value="mentions"><AtSign className="h-3.5 w-3.5 mr-1" />Mentions</TabsTrigger>
                   {visibleTabs.includes("groups") && <TabsTrigger value="groups"><UsersRound className="h-3.5 w-3.5 mr-1" />Groups</TabsTrigger>}
-                </TabsList>
+                </TabsList></div>
 
                 {/* Needs */}
                 <TabsContent value="needs" className="space-y-3">

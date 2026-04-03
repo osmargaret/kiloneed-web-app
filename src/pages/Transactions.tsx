@@ -226,7 +226,7 @@ const Transactions = () => {
               </div>
 
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                 <Card>
                   <CardContent className="flex items-center gap-3 py-4">
                     <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -284,7 +284,7 @@ const Transactions = () => {
                   <Dialog key={txn.id}>
                     <DialogTrigger asChild>
                       <Card className="cursor-pointer hover:shadow-md transition-all group">
-                        <CardContent className="flex items-center justify-between py-3">
+                        <CardContent className="flex items-center justify-between py-3 gap-2">
                           <div className="flex items-center gap-3">
                             <div className={`h-9 w-9 rounded-full flex items-center justify-center ${
                               txn.amount < 0 ? "bg-destructive/10" : "bg-emerald-500/10"

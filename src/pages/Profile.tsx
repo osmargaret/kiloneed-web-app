@@ -138,16 +138,18 @@ export default function Profile() {
             {/* ── Tabs ── */}
             <div className="max-w-5xl mx-auto p-4 md:p-6">
               <Tabs defaultValue="needs" className="space-y-4">
-                <TabsList className="flex flex-wrap gap-1 h-auto p-1">
-                  <TabsTrigger value="needs"><Home className="h-3.5 w-3.5 mr-1" />Needs</TabsTrigger>
-                  <TabsTrigger value="commodities"><ShoppingBag className="h-3.5 w-3.5 mr-1" />Commodities</TabsTrigger>
-                  <TabsTrigger value="connections"><Users className="h-3.5 w-3.5 mr-1" />Connections</TabsTrigger>
-                  <TabsTrigger value="groups"><UsersRound className="h-3.5 w-3.5 mr-1" />Groups</TabsTrigger>
-                  <TabsTrigger value="settings"><Settings className="h-3.5 w-3.5 mr-1" />Settings</TabsTrigger>
-                  <TabsTrigger value="ads"><Megaphone className="h-3.5 w-3.5 mr-1" />Ads</TabsTrigger>
-                  <TabsTrigger value="transactions"><Receipt className="h-3.5 w-3.5 mr-1" />Transactions</TabsTrigger>
-                  <TabsTrigger value="addprofile"><UserPlus className="h-3.5 w-3.5 mr-1" />Add Profile</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-4 px-4">
+                  <TabsList className="flex w-max gap-1 h-auto p-1">
+                    <TabsTrigger value="needs"><Home className="h-3.5 w-3.5 mr-1" />Needs</TabsTrigger>
+                    <TabsTrigger value="commodities"><ShoppingBag className="h-3.5 w-3.5 mr-1" />Commodities</TabsTrigger>
+                    <TabsTrigger value="connections"><Users className="h-3.5 w-3.5 mr-1" />Connections</TabsTrigger>
+                    <TabsTrigger value="groups"><UsersRound className="h-3.5 w-3.5 mr-1" />Groups</TabsTrigger>
+                    <TabsTrigger value="settings"><Settings className="h-3.5 w-3.5 mr-1" />Settings</TabsTrigger>
+                    <TabsTrigger value="ads"><Megaphone className="h-3.5 w-3.5 mr-1" />Ads</TabsTrigger>
+                    <TabsTrigger value="transactions"><Receipt className="h-3.5 w-3.5 mr-1" />Transactions</TabsTrigger>
+                    <TabsTrigger value="addprofile"><UserPlus className="h-3.5 w-3.5 mr-1" />Add Profile</TabsTrigger>
+                  </TabsList>
+                </div>
 
                 {/* ─ Needs ─ */}
                 <TabsContent value="needs" className="space-y-3">

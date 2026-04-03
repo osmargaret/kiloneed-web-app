@@ -313,7 +313,7 @@ const Settings = () => {
               </div>
 
               <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/50 h-auto">
                   <TabsTrigger value="profile" className="text-xs flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5" /> Profile
                   </TabsTrigger>
@@ -321,7 +321,7 @@ const Settings = () => {
                     <Shield className="h-3.5 w-3.5" /> Privacy
                   </TabsTrigger>
                   <TabsTrigger value="notifications" className="text-xs flex items-center gap-1.5">
-                    <Bell className="h-3.5 w-3.5" /> Notifications
+                    <Bell className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Notifications</span><span className="sm:hidden">Notifs</span>
                   </TabsTrigger>
                   <TabsTrigger value="danger" className="text-xs flex items-center gap-1.5">
                     <Trash2 className="h-3.5 w-3.5" /> Account

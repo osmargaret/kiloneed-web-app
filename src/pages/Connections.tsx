@@ -118,7 +118,7 @@ export default function Connections() {
             </div>
 
             <Tabs defaultValue="received" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
                 <TabsTrigger value="received" className="text-xs sm:text-sm">
                   Received{received.length > 0 && <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5">{received.length}</Badge>}
                 </TabsTrigger>
@@ -144,8 +144,8 @@ export default function Connections() {
                             <p className="font-medium text-foreground cursor-pointer hover:underline" onClick={() => goToProfile(r.id)}>{r.name}</p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" />{r.mutualConnections} mutual connections</p>
                           </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => accept(r.id)}><UserCheck className="h-4 w-4 mr-1" />Accept</Button>
+                          <div className="flex gap-2 shrink-0">
+                            <Button size="sm" onClick={() => accept(r.id)}><UserCheck className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Accept</span></Button>
                             <Button size="sm" variant="outline" onClick={() => decline(r.id)}><X className="h-4 w-4" /></Button>
                           </div>
                         </CardContent>
