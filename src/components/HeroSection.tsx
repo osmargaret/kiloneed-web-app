@@ -45,27 +45,27 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="relative flex items-center gradient-card rounded-2xl border border-border shadow-card p-1.5">
-            <Search className="ml-4 h-5 w-5 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              placeholder="Type what you need..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent px-4 py-3.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm md:text-base"
-            />
-            <div className="flex items-center gap-1.5 pr-1">
-              <button className="p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Image">
-                <Camera className="h-4 w-4" />
-              </button>
-              <button className="p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Video">
-                <Video className="h-4 w-4" />
-              </button>
-              <button className="px-5 py-2.5 rounded-xl gradient-blue text-primary-foreground font-semibold text-sm shadow-glow hover:opacity-90 transition-opacity">
-                Search
-              </button>
+            <div className="relative flex items-center gradient-card rounded-2xl border border-border shadow-card p-1.5">
+              <Search className="ml-3 sm:ml-4 h-5 w-5 text-muted-foreground shrink-0" />
+              <input
+                type="text"
+                placeholder="Type what you need..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="flex-1 bg-transparent px-2 sm:px-4 py-3 sm:py-3.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm md:text-base min-w-0"
+              />
+              <div className="flex items-center gap-1 sm:gap-1.5 pr-1 shrink-0">
+                <button className="p-2 sm:p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Image">
+                  <Camera className="h-4 w-4" />
+                </button>
+                <button className="hidden sm:block p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Video">
+                  <Video className="h-4 w-4" />
+                </button>
+                <button className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl gradient-blue text-primary-foreground font-semibold text-xs sm:text-sm shadow-glow hover:opacity-90 transition-opacity">
+                  Search
+                </button>
+              </div>
             </div>
-          </div>
 
           <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-2">

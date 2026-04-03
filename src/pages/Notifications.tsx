@@ -174,7 +174,7 @@ const Notifications = () => {
 
           <div className="p-3 sm:p-6 max-w-3xl mx-auto w-full space-y-4">
             <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-              <TabsList className="w-full flex overflow-x-auto">
+              <TabsList className="w-full flex overflow-x-auto h-auto flex-wrap sm:flex-nowrap">
                 {categories.map(c => (
                   <TabsTrigger key={c.value} value={c.value} className="text-xs px-3">
                     {c.label}

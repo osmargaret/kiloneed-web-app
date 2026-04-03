@@ -52,7 +52,7 @@ function SubscriptionsSection() {
         <p className="text-sm text-muted-foreground">Add additional profiles to manage multiple businesses or identities on Kiloneed.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {profilePlans.map((plan) => (
           <Card
             key={plan.name}

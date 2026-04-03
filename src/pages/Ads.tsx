@@ -218,12 +218,12 @@ const Ads = () => {
 
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-5xl mx-auto px-4 py-6">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
-                  <h1 className="text-2xl font-bold font-display text-foreground">My Ads</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">My Ads</h1>
                   <p className="text-sm text-muted-foreground">Manage all your advertisements and campaigns.</p>
                 </div>
-                <Button className="gradient-blue text-primary-foreground">
+                <Button className="gradient-blue text-primary-foreground w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-1" /> Create Ad
                 </Button>
               </div>

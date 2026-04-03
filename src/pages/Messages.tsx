@@ -354,7 +354,7 @@ const Messages = () => {
                 </ScrollArea>
 
                 {/* Chat Input Area */}
-                <div className="border-t border-border px-6 py-4">
+                <div className="border-t border-border px-3 sm:px-6 py-3 sm:py-4">
                   <div className="max-w-3xl mx-auto space-y-2">
                     {attachedFile && (
                       <MediaPreview

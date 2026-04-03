@@ -151,7 +151,7 @@ export default function PublicProfile() {
                   <TabsTrigger value="recommendations"><Star className="h-3.5 w-3.5 mr-1" />Recommendations</TabsTrigger>
                   <TabsTrigger value="mentions"><AtSign className="h-3.5 w-3.5 mr-1" />Mentions</TabsTrigger>
                   {visibleTabs.includes("groups") && <TabsTrigger value="groups"><UsersRound className="h-3.5 w-3.5 mr-1" />Groups</TabsTrigger>}
-                </TabsList>
+                </TabsList></div>
 
                 {/* Needs */}
                 <TabsContent value="needs" className="space-y-3">
