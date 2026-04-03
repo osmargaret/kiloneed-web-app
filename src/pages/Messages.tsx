@@ -200,6 +200,7 @@ const Messages = () => {
           {/* Header */}
           <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <SidebarTrigger />
               {view !== "list" && (
                 <Button variant="ghost" size="icon" onClick={handleBack}>
                   <ArrowLeft className="h-5 w-5" />

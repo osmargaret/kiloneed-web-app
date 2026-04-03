@@ -160,6 +160,7 @@ const Notifications = () => {
         <main className="flex-1 flex flex-col">
           <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
+              <SidebarTrigger />
               <Bell className="h-6 w-6 text-primary" />
               <h1 className="text-lg sm:text-2xl font-bold text-foreground">Notifications</h1>
               {unreadCount > 0 && (
