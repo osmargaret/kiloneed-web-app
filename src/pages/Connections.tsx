@@ -118,7 +118,7 @@ export default function Connections() {
             </div>
 
             <Tabs defaultValue="received" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
                 <TabsTrigger value="received" className="text-xs sm:text-sm">
                   Received{received.length > 0 && <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5">{received.length}</Badge>}
                 </TabsTrigger>
