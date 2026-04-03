@@ -323,7 +323,7 @@ const Messages = () => {
                     This {selectedThread?.type} is in draft mode. Messages are hidden and new messages won't be delivered.
                   </div>
                 )}
-                <ScrollArea className="flex-1 px-6 py-4">
+                <ScrollArea className="flex-1 px-3 sm:px-6 py-4">
                   <div className="max-w-3xl mx-auto space-y-4">
                     {messages.map((msg) => (
                       <div key={msg.id} className={`flex ${msg.isMine ? "justify-end" : "justify-start"}`}>
