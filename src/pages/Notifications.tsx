@@ -113,7 +113,7 @@ const Notifications = () => {
               <Button variant="ghost" size="icon" onClick={() => setSelectedNotification(null)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-xl font-bold text-foreground">Notification</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-foreground">Notification</h1>
             </div>
             <ScrollArea className="flex-1">
               <div className="max-w-2xl mx-auto p-6 space-y-6">
