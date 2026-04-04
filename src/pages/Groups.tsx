@@ -138,7 +138,6 @@ const Groups = () => {
   const [groupTab, setGroupTab] = useState("needs");
   const [showCreate, setShowCreate] = useState(false);
 
-  // Create form
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newType, setNewType] = useState<GroupType>("open");
@@ -146,7 +145,6 @@ const Groups = () => {
   const [newDuesAmount, setNewDuesAmount] = useState("");
   const [newDuesFreq, setNewDuesFreq] = useState("monthly");
 
-  // Withdrawal dialog
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
 
@@ -173,21 +171,10 @@ const Groups = () => {
     if (viewGroup?.id === id) setViewGroup(null);
   };
 
-  const handleAcceptRequest = (reqId: number) => {
-    setJoinRequests((prev) => prev.filter((r) => r.id !== reqId));
-  };
-
-  const handleDeclineRequest = (reqId: number) => {
-    setJoinRequests((prev) => prev.filter((r) => r.id !== reqId));
-  };
-
-  const handleAcceptInvite = (invId: number) => {
-    setInvitations((prev) => prev.filter((i) => i.id !== invId));
-  };
-
-  const handleDeclineInvite = (invId: number) => {
-    setInvitations((prev) => prev.filter((i) => i.id !== invId));
-  };
+  const handleAcceptRequest = (reqId: number) => setJoinRequests((prev) => prev.filter((r) => r.id !== reqId));
+  const handleDeclineRequest = (reqId: number) => setJoinRequests((prev) => prev.filter((r) => r.id !== reqId));
+  const handleAcceptInvite = (invId: number) => setInvitations((prev) => prev.filter((i) => i.id !== invId));
+  const handleDeclineInvite = (invId: number) => setInvitations((prev) => prev.filter((i) => i.id !== invId));
 
   const handleCreate = () => {
     if (!newTitle.trim()) return;
@@ -221,86 +208,83 @@ const Groups = () => {
       <SidebarProvider>
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar />
-          <div className="flex-1 flex flex-col">
-            <header className="sticky top-0 z-40 h-14 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-4">
+          <div className="flex-1 flex flex-col min-w-0">
+            <header className="sticky top-0 z-40 h-14 flex items-center gap-2 sm:gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 sm:px-4">
               <SidebarTrigger />
-              <Button variant="ghost" size="icon" onClick={() => setViewGroup(null)}>
+              <Button variant="ghost" size="icon" onClick={() => setViewGroup(null)} className="shrink-0">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="font-display text-sm font-bold text-foreground truncate">{g.title}</span>
             </header>
 
             <main className="flex-1 overflow-y-auto">
-              {/* Header Image */}
-              <div className="relative h-40 sm:h-56 overflow-hidden">
+              <div className="relative h-36 sm:h-56 overflow-hidden">
                 <img src={g.image} alt={g.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <Badge variant="outline" className={`${typeColor(g.type)} border-current text-[10px] gap-1 capitalize`}>
                       {typeIcon(g.type)} {g.type}
                     </Badge>
                     <Badge variant="outline" className="text-[10px]">{g.category}</Badge>
                   </div>
-                  <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground">{g.title}</h1>
-                  <p className="text-xs text-muted-foreground mt-1">{g.description}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{g.membersCount.toLocaleString()} / {g.maxMembers.toLocaleString()} members</span>
+                  <h1 className="font-display text-lg sm:text-2xl font-bold text-foreground">{g.title}</h1>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">{g.description}</p>
+                  <div className="flex items-center gap-3 mt-1 sm:mt-2 text-[11px] sm:text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />{g.membersCount.toLocaleString()} / {g.maxMembers.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Sub-menu tabs */}
-              <div className="max-w-4xl mx-auto px-4 py-4">
+              <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
                 <Tabs value={groupTab} onValueChange={setGroupTab}>
-                  <TabsList className="bg-secondary w-full justify-start overflow-x-auto">
-                    <TabsTrigger value="needs" className="gap-1.5"><Home className="h-3.5 w-3.5" /> Needs</TabsTrigger>
-                    <TabsTrigger value="commodities" className="gap-1.5"><ShoppingBag className="h-3.5 w-3.5" /> Commodities</TabsTrigger>
-                    <TabsTrigger value="members" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Members</TabsTrigger>
-                    {g.isMember && g.dues && (
-                      <TabsTrigger value="dues" className="gap-1.5"><Wallet className="h-3.5 w-3.5" /> Dues</TabsTrigger>
-                    )}
-                    {g.isAdmin && (
-                      <TabsTrigger value="settings" className="gap-1.5"><Settings className="h-3.5 w-3.5" /> Settings</TabsTrigger>
-                    )}
-                  </TabsList>
+                  <div className="overflow-x-auto -mx-3 px-3">
+                    <TabsList className="bg-secondary flex w-max gap-1">
+                      <TabsTrigger value="needs" className="gap-1 text-xs"><Home className="h-3.5 w-3.5" /> Needs</TabsTrigger>
+                      <TabsTrigger value="commodities" className="gap-1 text-xs"><ShoppingBag className="h-3.5 w-3.5" /> Items</TabsTrigger>
+                      <TabsTrigger value="members" className="gap-1 text-xs"><Users className="h-3.5 w-3.5" /> Members</TabsTrigger>
+                      {g.isMember && g.dues && (
+                        <TabsTrigger value="dues" className="gap-1 text-xs"><Wallet className="h-3.5 w-3.5" /> Dues</TabsTrigger>
+                      )}
+                      {g.isAdmin && (
+                        <TabsTrigger value="settings" className="gap-1 text-xs"><Settings className="h-3.5 w-3.5" /> Settings</TabsTrigger>
+                      )}
+                    </TabsList>
+                  </div>
 
-                  {/* Needs */}
                   <TabsContent value="needs" className="mt-4 space-y-3">
-                    <Card className="gradient-card border-border p-6 text-center">
+                    <Card className="gradient-card border-border p-4 sm:p-6 text-center">
                       <Home className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-                      <p className="text-sm text-muted-foreground">Group needs will appear here. Members can post what they need and others can respond.</p>
+                      <p className="text-sm text-muted-foreground">Group needs will appear here.</p>
                     </Card>
                   </TabsContent>
 
-                  {/* Commodities */}
                   <TabsContent value="commodities" className="mt-4 space-y-3">
-                    <Card className="gradient-card border-border p-6 text-center">
+                    <Card className="gradient-card border-border p-4 sm:p-6 text-center">
                       <ShoppingBag className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-                      <p className="text-sm text-muted-foreground">Group commodities and products shared by members will appear here.</p>
+                      <p className="text-sm text-muted-foreground">Group commodities will appear here.</p>
                     </Card>
                   </TabsContent>
 
-                  {/* Members */}
                   <TabsContent value="members" className="mt-4 space-y-2">
                     {g.members.map((m) => (
                       <Card key={m.id} className="gradient-card border-border">
-                        <CardContent className="p-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
+                        <CardContent className="p-3 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <Avatar className="h-8 w-8 sm:h-9 sm:w-9 shrink-0">
                               <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">{m.avatar}</AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm font-medium text-foreground">{m.name}</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs sm:text-sm font-medium text-foreground truncate">{m.name}</span>
                                 {roleIcon(m.role)}
                               </div>
-                              <span className="text-[11px] text-muted-foreground capitalize">{m.role} · Joined {m.joinedAt}</span>
+                              <span className="text-[10px] sm:text-[11px] text-muted-foreground capitalize">{m.role} · {m.joinedAt}</span>
                             </div>
                           </div>
                           {g.isAdmin && m.role !== "admin" && (
                             <Select value={m.role} onValueChange={(val) => handleChangeRole(g.id, m.id, val as MemberRole)}>
-                              <SelectTrigger className="w-[120px] h-8 text-xs bg-secondary border-border">
+                              <SelectTrigger className="w-[90px] sm:w-[120px] h-7 sm:h-8 text-[10px] sm:text-xs bg-secondary border-border shrink-0">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -314,32 +298,31 @@ const Groups = () => {
                     ))}
                   </TabsContent>
 
-                  {/* Dues (Special Groups) */}
                   {g.dues && (
                     <TabsContent value="dues" className="mt-4 space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <Card className="gradient-card border-border">
-                          <CardContent className="p-4 text-center">
+                          <CardContent className="p-3 sm:p-4 text-center">
                             <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
-                            <p className="text-xl font-bold text-gradient-blue">{formatCurrency(g.dues.total)}</p>
+                            <p className="text-lg sm:text-xl font-bold text-gradient-blue">{formatCurrency(g.dues.total)}</p>
                           </CardContent>
                         </Card>
                         <Card className="gradient-card border-border">
-                          <CardContent className="p-4 text-center">
+                          <CardContent className="p-3 sm:p-4 text-center">
                             <p className="text-xs text-muted-foreground mb-1">Dues Amount</p>
-                            <p className="text-xl font-bold text-foreground">{formatCurrency(g.dues.amount)}</p>
+                            <p className="text-lg sm:text-xl font-bold text-foreground">{formatCurrency(g.dues.amount)}</p>
                             <p className="text-[10px] text-muted-foreground capitalize">{g.dues.frequency}</p>
                           </CardContent>
                         </Card>
                         <Card className="gradient-card border-border">
-                          <CardContent className="p-4 text-center">
+                          <CardContent className="p-3 sm:p-4 text-center">
                             <p className="text-xs text-muted-foreground mb-1">Actions</p>
                             {g.isAdmin ? (
-                              <Button size="sm" className="gradient-blue text-primary-foreground gap-1" onClick={() => setShowWithdraw(true)}>
-                                <ArrowDownToLine className="h-3.5 w-3.5" /> Request Withdrawal
+                              <Button size="sm" className="gradient-blue text-primary-foreground gap-1 text-xs" onClick={() => setShowWithdraw(true)}>
+                                <ArrowDownToLine className="h-3.5 w-3.5" /> Withdraw
                               </Button>
                             ) : (
-                              <Button size="sm" className="gradient-blue text-primary-foreground gap-1">
+                              <Button size="sm" className="gradient-blue text-primary-foreground gap-1 text-xs">
                                 <Wallet className="h-3.5 w-3.5" /> Pay Dues
                               </Button>
                             )}
@@ -351,17 +334,17 @@ const Groups = () => {
                       <div className="space-y-2">
                         {g.dues.transactions.map((t) => (
                           <Card key={t.id} className="gradient-card border-border">
-                            <CardContent className="p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${t.type === "payment" ? "bg-green-500/10 text-green-400" : "bg-yellow-500/10 text-yellow-400"}`}>
-                                  {t.type === "payment" ? <Wallet className="h-4 w-4" /> : <ArrowDownToLine className="h-4 w-4" />}
+                            <CardContent className="p-3 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                <div className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0 ${t.type === "payment" ? "bg-green-500/10 text-green-400" : "bg-yellow-500/10 text-yellow-400"}`}>
+                                  {t.type === "payment" ? <Wallet className="h-3.5 w-3.5" /> : <ArrowDownToLine className="h-3.5 w-3.5" />}
                                 </div>
-                                <div>
-                                  <p className="text-sm text-foreground">{t.member}</p>
-                                  <p className="text-[11px] text-muted-foreground">{t.date} · <span className="capitalize">{t.status}</span></p>
+                                <div className="min-w-0">
+                                  <p className="text-xs sm:text-sm text-foreground truncate">{t.member}</p>
+                                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">{t.date} · <span className="capitalize">{t.status}</span></p>
                                 </div>
                               </div>
-                              <span className={`text-sm font-bold ${t.type === "payment" ? "text-green-400" : "text-yellow-400"}`}>
+                              <span className={`text-xs sm:text-sm font-bold shrink-0 ${t.type === "payment" ? "text-green-400" : "text-yellow-400"}`}>
                                 {t.type === "payment" ? "+" : "-"}{formatCurrency(t.amount)}
                               </span>
                             </CardContent>
@@ -371,11 +354,10 @@ const Groups = () => {
                     </TabsContent>
                   )}
 
-                  {/* Settings (Admin only) */}
                   {g.isAdmin && (
                     <TabsContent value="settings" className="mt-4 space-y-4">
                       <Card className="gradient-card border-border">
-                        <CardContent className="p-4 space-y-4">
+                        <CardContent className="p-3 sm:p-4 space-y-4">
                           <h3 className="text-sm font-semibold text-foreground">Group Settings</h3>
                           <div>
                             <label className="text-xs text-muted-foreground mb-1 block">Group Title</label>
@@ -391,7 +373,7 @@ const Groups = () => {
                               {typeIcon(g.type)} {g.type}
                             </Badge>
                           </div>
-                          <div className="flex gap-2 pt-2">
+                          <div className="flex flex-col sm:flex-row gap-2 pt-2">
                             <Button className="gradient-blue text-primary-foreground">Save Changes</Button>
                             <Button variant="destructive" size="sm" className="gap-1">
                               <AlertTriangle className="h-3.5 w-3.5" /> Delete Group
@@ -403,7 +385,6 @@ const Groups = () => {
                   )}
                 </Tabs>
 
-                {/* Leave group button */}
                 {g.isMember && !g.isAdmin && (
                   <div className="mt-6 text-center">
                     <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleLeave(g.id)}>
@@ -416,12 +397,11 @@ const Groups = () => {
           </div>
         </div>
 
-        {/* Withdrawal Dialog */}
         <Dialog open={showWithdraw} onOpenChange={setShowWithdraw}>
-          <DialogContent className="gradient-card border-border">
+          <DialogContent className="gradient-card border-border max-w-[calc(100vw-2rem)]">
             <DialogHeader>
               <DialogTitle className="font-display">Request Withdrawal</DialogTitle>
-              <DialogDescription>Requires approval from 3 other members. Platform charges apply.</DialogDescription>
+              <DialogDescription>Requires approval from 3 other members.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 pt-2">
               <div>
@@ -430,13 +410,13 @@ const Groups = () => {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Destination Account</label>
-                <Input placeholder="Bank name — Account number" className="bg-secondary border-border" />
+                <Input placeholder="Bank — Account number" className="bg-secondary border-border" />
               </div>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-yellow-400" /> 3 members must approve before disbursement.</p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-yellow-400" /> 3 members must approve.</p>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => setShowWithdraw(false)}>Cancel</Button>
-              <Button className="gradient-blue text-primary-foreground" onClick={() => setShowWithdraw(false)}>Submit Request</Button>
+              <Button className="gradient-blue text-primary-foreground" onClick={() => setShowWithdraw(false)}>Submit</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -449,33 +429,31 @@ const Groups = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-40 h-14 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-4">
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="sticky top-0 z-40 h-14 flex items-center gap-2 sm:gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 sm:px-4">
             <SidebarTrigger />
-            <span className="font-display text-lg font-bold text-gradient-blue">KILONEED</span>
+            <span className="font-display text-base sm:text-lg font-bold text-gradient-blue">KILONEED</span>
             <span className="text-muted-foreground text-sm hidden sm:inline">/ Groups</span>
             <div className="ml-auto">
-              <Button size="sm" onClick={() => setShowCreate(true)} className="gradient-blue text-primary-foreground gap-1.5">
-                <Plus className="h-4 w-4" /> Create
+              <Button size="sm" onClick={() => setShowCreate(true)} className="gradient-blue text-primary-foreground gap-1 text-xs sm:text-sm">
+                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Create</span>
               </Button>
             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-              {/* Search */}
+            <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search groups..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-secondary border-border" />
               </div>
 
-              {/* Category filter */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-3 px-3">
                 {categories.map((c) => (
                   <Badge
                     key={c}
                     variant={filterCat === c ? "default" : "outline"}
-                    className={`cursor-pointer whitespace-nowrap ${filterCat === c ? "gradient-blue text-primary-foreground border-transparent" : "hover:bg-muted"}`}
+                    className={`cursor-pointer whitespace-nowrap text-xs ${filterCat === c ? "gradient-blue text-primary-foreground border-transparent" : "hover:bg-muted"}`}
                     onClick={() => setFilterCat(c)}
                   >
                     {c}
@@ -484,57 +462,58 @@ const Groups = () => {
               </div>
 
               <Tabs defaultValue="suggested">
-                <TabsList className="bg-secondary">
-                  <TabsTrigger value="suggested">Suggested Groups</TabsTrigger>
-                  <TabsTrigger value="invitations" className="gap-1">
-                    Invitations {invitations.length > 0 && <Badge className="gradient-blue text-primary-foreground h-5 px-1.5 text-[10px] border-transparent">{invitations.length}</Badge>}
-                  </TabsTrigger>
-                  <TabsTrigger value="requests" className="gap-1">
-                    Join Requests {joinRequests.length > 0 && <Badge className="gradient-blue text-primary-foreground h-5 px-1.5 text-[10px] border-transparent">{joinRequests.length}</Badge>}
-                  </TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-3 px-3">
+                  <TabsList className="bg-secondary flex w-max gap-1">
+                    <TabsTrigger value="suggested" className="text-xs">Groups</TabsTrigger>
+                    <TabsTrigger value="invitations" className="gap-1 text-xs">
+                      Invites {invitations.length > 0 && <Badge className="gradient-blue text-primary-foreground h-5 px-1.5 text-[10px] border-transparent">{invitations.length}</Badge>}
+                    </TabsTrigger>
+                    <TabsTrigger value="requests" className="gap-1 text-xs">
+                      Requests {joinRequests.length > 0 && <Badge className="gradient-blue text-primary-foreground h-5 px-1.5 text-[10px] border-transparent">{joinRequests.length}</Badge>}
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
-                {/* Suggested Groups */}
                 <TabsContent value="suggested" className="mt-4 space-y-3">
                   {filtered.map((g, i) => (
                     <motion.div key={g.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                       <Card className="gradient-card border-border overflow-hidden hover:shadow-glow transition-shadow">
                         <div className="flex">
                           <div
-                            className="w-28 sm:w-40 shrink-0 overflow-hidden cursor-pointer"
+                            className="w-20 sm:w-40 shrink-0 overflow-hidden cursor-pointer"
                             onClick={() => { setViewGroup(g); setGroupTab("needs"); }}
                           >
                             <img src={g.image} alt={g.title} className="w-full h-full object-cover" loading="lazy" />
                           </div>
-                          <CardContent className="p-3 flex-1 flex flex-col justify-between">
+                          <CardContent className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between min-w-0">
                             <div>
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                                 <h3
-                                  className="font-display font-semibold text-foreground text-sm cursor-pointer hover:text-primary transition-colors"
+                                  className="font-display font-semibold text-foreground text-xs sm:text-sm cursor-pointer hover:text-primary transition-colors truncate"
                                   onClick={() => { setViewGroup(g); setGroupTab("needs"); }}
                                 >
                                   {g.title}
                                 </h3>
-                                <Badge variant="outline" className={`${typeColor(g.type)} border-current text-[9px] gap-0.5 capitalize`}>
+                                <Badge variant="outline" className={`${typeColor(g.type)} border-current text-[8px] sm:text-[9px] gap-0.5 capitalize shrink-0`}>
                                   {typeIcon(g.type)} {g.type}
                                 </Badge>
                               </div>
-                              <p className="text-xs text-muted-foreground line-clamp-2">{g.description}</p>
+                              <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">{g.description}</p>
                             </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                <Users className="h-3 w-3" /> {g.membersCount.toLocaleString()} members
+                            <div className="flex items-center justify-between mt-1.5 sm:mt-2">
+                              <span className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1">
+                                <Users className="h-3 w-3" /> {g.membersCount.toLocaleString()}
                               </span>
                               {g.isMember ? (
-                                <Badge variant="outline" className="text-[10px] text-green-400 border-green-400/30 gap-1">
+                                <Badge variant="outline" className="text-[9px] sm:text-[10px] text-green-400 border-green-400/30 gap-0.5">
                                   <UserCheck className="h-3 w-3" /> Joined
                                 </Badge>
                               ) : g.isPending ? (
-                                <Badge variant="outline" className="text-[10px] text-yellow-400 border-yellow-400/30 gap-1">
+                                <Badge variant="outline" className="text-[9px] sm:text-[10px] text-yellow-400 border-yellow-400/30 gap-0.5">
                                   <Clock className="h-3 w-3" /> Pending
                                 </Badge>
                               ) : (
-                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => handleJoin(g.id)}>
+                                <Button size="sm" variant="outline" className="h-6 sm:h-7 text-[10px] sm:text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10 px-2" onClick={() => handleJoin(g.id)}>
                                   <UserPlus className="h-3 w-3" /> Join
                                 </Button>
                               )}
@@ -547,12 +526,11 @@ const Groups = () => {
                   {filtered.length === 0 && (
                     <div className="text-center py-16">
                       <Users className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                      <p className="text-sm text-muted-foreground">No groups found matching your search.</p>
+                      <p className="text-sm text-muted-foreground">No groups found.</p>
                     </div>
                   )}
                 </TabsContent>
 
-                {/* Invitations */}
                 <TabsContent value="invitations" className="mt-4 space-y-3">
                   {invitations.length === 0 ? (
                     <div className="text-center py-16">
@@ -561,20 +539,20 @@ const Groups = () => {
                     </div>
                   ) : invitations.map((inv) => (
                     <Card key={inv.id} className="gradient-card border-border">
-                      <CardContent className="p-3 flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-lg overflow-hidden shrink-0">
+                      <CardContent className="p-3 flex items-center gap-2 sm:gap-3">
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg overflow-hidden shrink-0">
                           <img src={inv.groupImage} alt={inv.groupTitle} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{inv.groupTitle}</p>
-                          <p className="text-[11px] text-muted-foreground">Invited by {inv.invitedBy}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{inv.groupTitle}</p>
+                          <p className="text-[10px] sm:text-[11px] text-muted-foreground">By {inv.invitedBy}</p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="icon" variant="outline" className="h-8 w-8 border-green-400/30 text-green-400 hover:bg-green-400/10" onClick={() => handleAcceptInvite(inv.id)}>
-                            <Check className="h-4 w-4" />
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8 border-green-400/30 text-green-400 hover:bg-green-400/10" onClick={() => handleAcceptInvite(inv.id)}>
+                            <Check className="h-3.5 w-3.5" />
                           </Button>
-                          <Button size="icon" variant="outline" className="h-8 w-8 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => handleDeclineInvite(inv.id)}>
-                            <X className="h-4 w-4" />
+                          <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => handleDeclineInvite(inv.id)}>
+                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </CardContent>
@@ -582,29 +560,28 @@ const Groups = () => {
                   ))}
                 </TabsContent>
 
-                {/* Join Requests */}
                 <TabsContent value="requests" className="mt-4 space-y-3">
                   {joinRequests.length === 0 ? (
                     <div className="text-center py-16">
                       <UserCheck className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                      <p className="text-sm text-muted-foreground">No pending join requests.</p>
+                      <p className="text-sm text-muted-foreground">No pending requests.</p>
                     </div>
                   ) : joinRequests.map((req) => (
                     <Card key={req.id} className="gradient-card border-border">
-                      <CardContent className="p-3 flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
+                      <CardContent className="p-3 flex items-center gap-2 sm:gap-3">
+                        <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0">
                           <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">{req.userAvatar}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground">{req.userName}</p>
-                          <p className="text-[11px] text-muted-foreground">Wants to join {req.groupTitle} · {req.requestedAt}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{req.userName}</p>
+                          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{req.groupTitle} · {req.requestedAt}</p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="h-7 text-xs border-green-400/30 text-green-400 hover:bg-green-400/10 gap-1" onClick={() => handleAcceptRequest(req.id)}>
-                            <Check className="h-3 w-3" /> Accept
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="sm" variant="outline" className="h-6 sm:h-7 text-[10px] sm:text-xs border-green-400/30 text-green-400 hover:bg-green-400/10 gap-0.5 px-2" onClick={() => handleAcceptRequest(req.id)}>
+                            <Check className="h-3 w-3" /> <span className="hidden sm:inline">Accept</span>
                           </Button>
-                          <Button size="sm" variant="outline" className="h-7 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1" onClick={() => handleDeclineRequest(req.id)}>
-                            <X className="h-3 w-3" /> Decline
+                          <Button size="sm" variant="outline" className="h-6 sm:h-7 text-[10px] sm:text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-0.5 px-2" onClick={() => handleDeclineRequest(req.id)}>
+                            <X className="h-3 w-3" />
                           </Button>
                         </div>
                       </CardContent>
@@ -617,12 +594,11 @@ const Groups = () => {
         </div>
       </div>
 
-      {/* Create Group Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="gradient-card border-border">
+        <DialogContent className="gradient-card border-border max-w-[calc(100vw-2rem)]">
           <DialogHeader>
             <DialogTitle className="font-display">Create Group</DialogTitle>
-            <DialogDescription>Start a new community. Max 1,000 members per group.</DialogDescription>
+            <DialogDescription>Start a new community. Max 1,000 members.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
@@ -633,7 +609,7 @@ const Groups = () => {
               <label className="text-xs text-muted-foreground mb-1 block">Description</label>
               <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="What is this group about?" className="bg-secondary border-border resize-none" rows={3} />
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground mb-1 block">Category</label>
                 <Select value={newCategory} onValueChange={setNewCategory}>
@@ -650,15 +626,15 @@ const Groups = () => {
                 <Select value={newType} onValueChange={(v) => setNewType(v as GroupType)}>
                   <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="open">Open — Anyone can join</SelectItem>
-                    <SelectItem value="closed">Closed — Requires approval</SelectItem>
-                    <SelectItem value="special">Special — Invite only + Dues</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="special">Special (with dues)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             {newType === "special" && (
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-muted-foreground mb-1 block">Dues Amount (₦)</label>
                   <Input type="number" value={newDuesAmount} onChange={(e) => setNewDuesAmount(e.target.value)} placeholder="0" className="bg-secondary border-border" />
@@ -668,19 +644,16 @@ const Groups = () => {
                   <Select value={newDuesFreq} onValueChange={setNewDuesFreq}>
                     <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
                       <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="annually">Annually</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             )}
-            <Button variant="outline" className="w-full gap-2 border-dashed border-border text-muted-foreground">
-              <ImageIcon className="h-4 w-4" /> Upload Cover Image
-            </Button>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handleCreate} className="gradient-blue text-primary-foreground">Create Group</Button>
           </DialogFooter>
