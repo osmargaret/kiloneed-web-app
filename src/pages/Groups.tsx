@@ -555,6 +555,12 @@ const Groups = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <GroupMessageModal
+          open={messageModalOpen}
+          onOpenChange={setMessageModalOpen}
+          userName={messageTargetUser}
+        />
       </SidebarProvider>
     );
   }
