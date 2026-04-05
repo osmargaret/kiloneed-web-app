@@ -11,12 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
   Search, Plus, Users, Lock, Sparkles, Globe, ChevronLeft, Settings,
   ShoppingBag, Home, UserPlus, UserCheck, UserX, Crown, Shield, User,
   Image as ImageIcon, Wallet, ArrowDownToLine, Check, X, Clock,
-  AlertTriangle,
+  AlertTriangle, ImagePlus, Send,
 } from "lucide-react";
+import GroupPost, { GroupPostData } from "@/components/GroupPost";
+import GroupMessageModal from "@/components/GroupMessageModal";
 
 // ─── Types ───
 type GroupType = "open" | "closed" | "special";
@@ -106,6 +109,33 @@ const seedJoinRequests: JoinRequest[] = [
   { id: 2, groupId: 1, groupTitle: "Lagos Tech Traders", userName: "Adeola Williams", userAvatar: "AW", requestedAt: "5h ago" },
 ];
 
+const seedGroupPosts: GroupPostData[] = [
+  {
+    id: "gp1", author: "Adebayo Ogunlesi", avatar: "AO",
+    text: "Just got a bulk shipment of Samsung Galaxy S24 cases. Anyone interested? ₦3,500 each, minimum order 10 pieces. DM me!",
+    image: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=300&fit=crop",
+    time: "2h ago", likes: 12, liked: false, saved: false, shared: false,
+    comments: [
+      { id: "gc1", author: "Fatima Bello", avatar: "FB", text: "I'll take 20! Please reserve for me", time: "1h ago" },
+      { id: "gc2", author: "Chinedu Okoro", avatar: "CO", text: "Great price! Are there other colors?", time: "45m ago" },
+    ],
+  },
+  {
+    id: "gp2", author: "Amina Yusuf", avatar: "AY",
+    text: "Looking for a reliable laptop repair technician in Ikeja area. My MacBook Pro screen needs replacement. Any recommendations?",
+    time: "5h ago", likes: 4, liked: false, saved: false, shared: false,
+    comments: [
+      { id: "gc3", author: "Tunde Bakare", avatar: "TB", text: "Try TechFix on Allen Avenue, they're good", time: "4h ago" },
+    ],
+  },
+  {
+    id: "gp3", author: "Chinedu Okoro", avatar: "CO",
+    text: "PSA: Beware of fake iPhone 15 chargers flooding the market. I tested 5 from Computer Village — only 1 was genuine. Always buy from verified sellers!",
+    time: "1d ago", likes: 28, liked: true, saved: true, shared: false,
+    comments: [],
+  },
+];
+
 const categories = ["All", "Electronics", "Fashion", "Vehicles", "Real Estate", "Food", "Services", "Health", "Sports"];
 
 const typeIcon = (type: GroupType) => {
@@ -147,6 +177,12 @@ const Groups = () => {
 
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+
+  // Group posts state
+  const [groupPosts, setGroupPosts] = useState<GroupPostData[]>(seedGroupPosts);
+  const [newPostText, setNewPostText] = useState("");
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageTargetUser, setMessageTargetUser] = useState("");
 
   const filtered = groups.filter((g) => {
     const matchSearch = g.title.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase());
@@ -201,7 +237,56 @@ const Groups = () => {
     }
   };
 
-  // ─── Group Detail View ───
+  // ─── Post handlers ───
+  const handleCreatePost = () => {
+    if (!newPostText.trim()) return;
+    const post: GroupPostData = {
+      id: `gp-${Date.now()}`, author: "You", avatar: "YO", text: newPostText,
+      time: "Just now", likes: 0, liked: false, saved: false, shared: false, comments: [],
+    };
+    setGroupPosts((prev) => [post, ...prev]);
+    setNewPostText("");
+    toast.success("Post published!");
+  };
+
+  const handleLikePost = (id: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
+    ));
+  };
+
+  const handleSavePost = (id: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, saved: !p.saved } : p
+    ));
+    const post = groupPosts.find((p) => p.id === id);
+    toast.success(post?.saved ? "Post unsaved" : "Post saved!");
+  };
+
+  const handleSharePost = (id: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, shared: true } : p
+    ));
+    toast.success("Post shared!");
+  };
+
+  const handleCommentPost = (id: string, text: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? {
+        ...p, comments: [...p.comments, {
+          id: `gc-${Date.now()}`, author: "You", avatar: "YO", text, time: "Just now",
+        }],
+      } : p
+    ));
+  };
+
+  const handleUsernameClick = (name: string) => {
+    if (name === "You") return;
+    setMessageTargetUser(name);
+    setMessageModalOpen(true);
+  };
+
+
   if (viewGroup) {
     const g = groups.find((gr) => gr.id === viewGroup.id) || viewGroup;
     return (
@@ -253,10 +338,60 @@ const Groups = () => {
                   </div>
 
                   <TabsContent value="needs" className="mt-4 space-y-3">
-                    <Card className="gradient-card border-border p-4 sm:p-6 text-center">
-                      <Home className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-                      <p className="text-sm text-muted-foreground">Group needs will appear here.</p>
-                    </Card>
+                    {/* Create Post */}
+                    {g.isMember && (
+                      <Card className="gradient-card border-border">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex gap-2">
+                            <Avatar className="h-8 w-8 shrink-0">
+                              <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">YO</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-2">
+                              <Textarea
+                                value={newPostText}
+                                onChange={(e) => setNewPostText(e.target.value)}
+                                placeholder="Share something with the group..."
+                                className="bg-secondary border-border resize-none text-xs sm:text-sm min-h-[60px]"
+                                rows={2}
+                              />
+                              <div className="flex items-center justify-between">
+                                <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-7">
+                                  <ImagePlus className="h-3.5 w-3.5" /> Photo
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="gradient-blue text-primary-foreground gap-1 text-xs h-7"
+                                  onClick={handleCreatePost}
+                                  disabled={!newPostText.trim()}
+                                >
+                                  <Send className="h-3.5 w-3.5" /> Post
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Posts Feed */}
+                    {groupPosts.map((post) => (
+                      <GroupPost
+                        key={post.id}
+                        post={post}
+                        onLike={handleLikePost}
+                        onSave={handleSavePost}
+                        onShare={handleSharePost}
+                        onComment={handleCommentPost}
+                        onUsernameClick={handleUsernameClick}
+                      />
+                    ))}
+
+                    {groupPosts.length === 0 && (
+                      <Card className="gradient-card border-border p-4 sm:p-6 text-center">
+                        <Home className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                        <p className="text-sm text-muted-foreground">No posts yet. Be the first to share!</p>
+                      </Card>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="commodities" className="mt-4 space-y-3">
@@ -420,6 +555,12 @@ const Groups = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <GroupMessageModal
+          open={messageModalOpen}
+          onOpenChange={setMessageModalOpen}
+          userName={messageTargetUser}
+        />
       </SidebarProvider>
     );
   }
