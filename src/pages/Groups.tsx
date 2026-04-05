@@ -108,6 +108,33 @@ const seedJoinRequests: JoinRequest[] = [
   { id: 2, groupId: 1, groupTitle: "Lagos Tech Traders", userName: "Adeola Williams", userAvatar: "AW", requestedAt: "5h ago" },
 ];
 
+const seedGroupPosts: GroupPostData[] = [
+  {
+    id: "gp1", author: "Adebayo Ogunlesi", avatar: "AO",
+    text: "Just got a bulk shipment of Samsung Galaxy S24 cases. Anyone interested? ₦3,500 each, minimum order 10 pieces. DM me!",
+    image: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=300&fit=crop",
+    time: "2h ago", likes: 12, liked: false, saved: false, shared: false,
+    comments: [
+      { id: "gc1", author: "Fatima Bello", avatar: "FB", text: "I'll take 20! Please reserve for me", time: "1h ago" },
+      { id: "gc2", author: "Chinedu Okoro", avatar: "CO", text: "Great price! Are there other colors?", time: "45m ago" },
+    ],
+  },
+  {
+    id: "gp2", author: "Amina Yusuf", avatar: "AY",
+    text: "Looking for a reliable laptop repair technician in Ikeja area. My MacBook Pro screen needs replacement. Any recommendations?",
+    time: "5h ago", likes: 4, liked: false, saved: false, shared: false,
+    comments: [
+      { id: "gc3", author: "Tunde Bakare", avatar: "TB", text: "Try TechFix on Allen Avenue, they're good", time: "4h ago" },
+    ],
+  },
+  {
+    id: "gp3", author: "Chinedu Okoro", avatar: "CO",
+    text: "PSA: Beware of fake iPhone 15 chargers flooding the market. I tested 5 from Computer Village — only 1 was genuine. Always buy from verified sellers!",
+    time: "1d ago", likes: 28, liked: true, saved: true, shared: false,
+    comments: [],
+  },
+];
+
 const categories = ["All", "Electronics", "Fashion", "Vehicles", "Real Estate", "Food", "Services", "Health", "Sports"];
 
 const typeIcon = (type: GroupType) => {
