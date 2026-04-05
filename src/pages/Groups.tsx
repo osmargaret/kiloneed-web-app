@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
   Search, Plus, Users, Lock, Sparkles, Globe, ChevronLeft, Settings,
   ShoppingBag, Home, UserPlus, UserCheck, UserX, Crown, Shield, User,
