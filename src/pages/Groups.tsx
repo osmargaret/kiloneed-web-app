@@ -177,6 +177,12 @@ const Groups = () => {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
 
+  // Group posts state
+  const [groupPosts, setGroupPosts] = useState<GroupPostData[]>(seedGroupPosts);
+  const [newPostText, setNewPostText] = useState("");
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageTargetUser, setMessageTargetUser] = useState("");
+
   const filtered = groups.filter((g) => {
     const matchSearch = g.title.toLowerCase().includes(search.toLowerCase()) || g.description.toLowerCase().includes(search.toLowerCase());
     const matchCat = filterCat === "All" || g.category === filterCat;
