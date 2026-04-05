@@ -236,7 +236,56 @@ const Groups = () => {
     }
   };
 
-  // ─── Group Detail View ───
+  // ─── Post handlers ───
+  const handleCreatePost = () => {
+    if (!newPostText.trim()) return;
+    const post: GroupPostData = {
+      id: `gp-${Date.now()}`, author: "You", avatar: "YO", text: newPostText,
+      time: "Just now", likes: 0, liked: false, saved: false, shared: false, comments: [],
+    };
+    setGroupPosts((prev) => [post, ...prev]);
+    setNewPostText("");
+    toast.success("Post published!");
+  };
+
+  const handleLikePost = (id: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
+    ));
+  };
+
+  const handleSavePost = (id: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, saved: !p.saved } : p
+    ));
+    const post = groupPosts.find((p) => p.id === id);
+    toast.success(post?.saved ? "Post unsaved" : "Post saved!");
+  };
+
+  const handleSharePost = (id: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, shared: true } : p
+    ));
+    toast.success("Post shared!");
+  };
+
+  const handleCommentPost = (id: string, text: string) => {
+    setGroupPosts((prev) => prev.map((p) =>
+      p.id === id ? {
+        ...p, comments: [...p.comments, {
+          id: `gc-${Date.now()}`, author: "You", avatar: "YO", text, time: "Just now",
+        }],
+      } : p
+    ));
+  };
+
+  const handleUsernameClick = (name: string) => {
+    if (name === "You") return;
+    setMessageTargetUser(name);
+    setMessageModalOpen(true);
+  };
+
+
   if (viewGroup) {
     const g = groups.find((gr) => gr.id === viewGroup.id) || viewGroup;
     return (
