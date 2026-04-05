@@ -15,8 +15,10 @@ import {
   Search, Plus, Users, Lock, Sparkles, Globe, ChevronLeft, Settings,
   ShoppingBag, Home, UserPlus, UserCheck, UserX, Crown, Shield, User,
   Image as ImageIcon, Wallet, ArrowDownToLine, Check, X, Clock,
-  AlertTriangle,
+  AlertTriangle, ImagePlus, Send,
 } from "lucide-react";
+import GroupPost, { GroupPostData } from "@/components/GroupPost";
+import GroupMessageModal from "@/components/GroupMessageModal";
 
 // ─── Types ───
 type GroupType = "open" | "closed" | "special";
