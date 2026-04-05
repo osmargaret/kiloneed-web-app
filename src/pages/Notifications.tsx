@@ -157,7 +157,7 @@ const Notifications = () => {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
           <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
@@ -176,9 +176,9 @@ const Notifications = () => {
 
           <div className="p-3 sm:p-6 max-w-3xl mx-auto w-full space-y-4">
             <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-              <TabsList className="w-full flex overflow-x-auto h-auto flex-wrap sm:flex-nowrap">
+              <TabsList className="w-full flex overflow-x-auto h-auto flex-nowrap scrollbar-hide">
                 {categories.map(c => (
-                  <TabsTrigger key={c.value} value={c.value} className="text-xs px-3">
+                  <TabsTrigger key={c.value} value={c.value} className="text-xs px-2.5 shrink-0">
                     {c.label}
                   </TabsTrigger>
                 ))}

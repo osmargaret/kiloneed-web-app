@@ -136,12 +136,12 @@ const NeedCard = ({ need }: { need: Need }) => {
       </div>
 
       {/* Reactions */}
-      <div className="flex items-center gap-0.5 sm:gap-1 px-3 sm:px-5 py-2 sm:py-3 mt-2 border-t border-border flex-wrap">
+      <div className="flex items-center gap-0 sm:gap-1 px-2 sm:px-5 py-2 sm:py-3 mt-2 border-t border-border flex-wrap">
         {reactionButtons.map(({ key, icon: Icon, label, count }) => (
           <button
             key={key}
             onClick={() => toggle(key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all ${
               reactions[key]
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -215,8 +215,8 @@ const NeedCard = ({ need }: { need: Need }) => {
 
 const NeedsFeed = () => {
   return (
-    <section className="py-16" id="needs">
-      <div className="container mx-auto px-4 max-w-2xl">
+    <section className="py-8 sm:py-16" id="needs">
+      <div className="container mx-auto px-3 sm:px-4 max-w-2xl overflow-x-hidden">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
