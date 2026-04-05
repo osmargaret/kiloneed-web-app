@@ -338,10 +338,60 @@ const Groups = () => {
                   </div>
 
                   <TabsContent value="needs" className="mt-4 space-y-3">
-                    <Card className="gradient-card border-border p-4 sm:p-6 text-center">
-                      <Home className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-                      <p className="text-sm text-muted-foreground">Group needs will appear here.</p>
-                    </Card>
+                    {/* Create Post */}
+                    {g.isMember && (
+                      <Card className="gradient-card border-border">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex gap-2">
+                            <Avatar className="h-8 w-8 shrink-0">
+                              <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">YO</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-2">
+                              <Textarea
+                                value={newPostText}
+                                onChange={(e) => setNewPostText(e.target.value)}
+                                placeholder="Share something with the group..."
+                                className="bg-secondary border-border resize-none text-xs sm:text-sm min-h-[60px]"
+                                rows={2}
+                              />
+                              <div className="flex items-center justify-between">
+                                <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-7">
+                                  <ImagePlus className="h-3.5 w-3.5" /> Photo
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="gradient-blue text-primary-foreground gap-1 text-xs h-7"
+                                  onClick={handleCreatePost}
+                                  disabled={!newPostText.trim()}
+                                >
+                                  <Send className="h-3.5 w-3.5" /> Post
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Posts Feed */}
+                    {groupPosts.map((post) => (
+                      <GroupPost
+                        key={post.id}
+                        post={post}
+                        onLike={handleLikePost}
+                        onSave={handleSavePost}
+                        onShare={handleSharePost}
+                        onComment={handleCommentPost}
+                        onUsernameClick={handleUsernameClick}
+                      />
+                    ))}
+
+                    {groupPosts.length === 0 && (
+                      <Card className="gradient-card border-border p-4 sm:p-6 text-center">
+                        <Home className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                        <p className="text-sm text-muted-foreground">No posts yet. Be the first to share!</p>
+                      </Card>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="commodities" className="mt-4 space-y-3">
