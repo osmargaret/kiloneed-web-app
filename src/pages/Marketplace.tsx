@@ -133,7 +133,7 @@ const Marketplace = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
           <header className="sticky top-0 z-40 h-14 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-4">
             <SidebarTrigger />
@@ -147,9 +147,9 @@ const Marketplace = () => {
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
               {/* Search & Filters Bar */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -159,20 +159,20 @@ const Marketplace = () => {
                     className="pl-10 bg-secondary border-border"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setShowFilters(!showFilters)}
-                    className={showFilters ? "border-primary text-primary" : ""}
+                    className={`shrink-0 ${showFilters ? "border-primary text-primary" : ""}`}
                   >
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={() => setView(view === "grid" ? "list" : "grid")}>
+                  <Button variant="outline" size="icon" className="shrink-0" onClick={() => setView(view === "grid" ? "list" : "grid")}>
                     {view === "grid" ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
                   </Button>
                   <Select value={sort} onValueChange={setSort}>
-                    <SelectTrigger className="w-[160px] bg-secondary border-border">
+                    <SelectTrigger className="w-[140px] sm:w-[160px] bg-secondary border-border">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -253,15 +253,15 @@ const Marketplace = () => {
                     <Sparkles className="h-4 w-4 text-primary" />
                     <span className="text-xs font-bold uppercase tracking-widest text-primary">Featured</span>
                   </div>
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0">
                     {featuredProducts.map((p) => (
                       <motion.div
                         key={p.id}
                         whileHover={{ scale: 1.03 }}
-                        className="min-w-[240px] gradient-card rounded-xl border border-border overflow-hidden cursor-pointer shadow-card hover:shadow-glow transition-shadow"
+                        className="min-w-[200px] sm:min-w-[240px] gradient-card rounded-xl border border-border overflow-hidden cursor-pointer shadow-card hover:shadow-glow transition-shadow shrink-0"
                         onClick={() => setSelectedProduct(p)}
                       >
-                        <div className="relative h-32 overflow-hidden">
+                        <div className="relative h-28 sm:h-32 overflow-hidden">
                           <img src={p.image} alt={p.title} className="w-full h-full object-cover" loading="lazy" />
                           <Badge className="absolute top-2 left-2 gradient-blue text-primary-foreground border-transparent text-[10px]">
                             <Sparkles className="h-3 w-3 mr-1" /> Featured
@@ -382,7 +382,7 @@ const Marketplace = () => {
 
       {/* Product Detail Dialog */}
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="gradient-card border-border max-w-lg">
+        <DialogContent className="gradient-card border-border max-w-lg mx-2 max-h-[90vh] overflow-y-auto">
           {selectedProduct && (
             <>
               <div className="relative h-56 -mx-6 -mt-6 overflow-hidden rounded-t-lg">
