@@ -1,7 +1,8 @@
-import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, LayoutDashboard, Megaphone, Receipt } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, LayoutDashboard, Megaphone, Receipt, Moon, Sun } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useTheme } from "next-themes";
+import React from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -81,9 +82,7 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Toggle theme" onClick={() => {}} asChild>
-              <ThemeToggleRow collapsed={collapsed} />
-            </SidebarMenuButton>
+            <ThemeToggleButton collapsed={collapsed} />
           </SidebarMenuItem>
           {bottomItems.map((item) => (
             <SidebarMenuItem key={item.title}>
