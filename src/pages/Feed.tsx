@@ -98,19 +98,19 @@ const Feed = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full overflow-hidden bg-background">
         <AppSidebar />
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex min-w-0 flex-col overflow-hidden">
           {/* Top bar */}
-          <header className="sticky top-0 z-40 h-14 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-4">
+          <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur-xl sm:px-4">
             <SidebarTrigger />
-            <span className="font-display text-lg font-bold text-gradient-blue">KILONEED</span>
+            <span className="font-display text-base font-bold text-gradient-blue sm:text-lg">KILONEED</span>
           </header>
 
           {/* Feed content */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="mx-auto w-full max-w-2xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-4 sm:py-6">
               <CreatePost onPost={handleNewPost} />
               {posts.map((post) => (
                 <FeedPost key={post.id} post={post} />
