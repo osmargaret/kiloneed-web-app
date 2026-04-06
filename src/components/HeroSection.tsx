@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Camera, Video, Filter, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
