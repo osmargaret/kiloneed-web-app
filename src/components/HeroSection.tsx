@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Camera, Video, Filter, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -55,13 +58,13 @@ const HeroSection = () => {
                 className="flex-1 bg-transparent px-2 sm:px-4 py-3 sm:py-3.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm md:text-base min-w-0"
               />
               <div className="flex items-center gap-1 sm:gap-1.5 pr-1 shrink-0">
-                <button className="p-2 sm:p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Image">
+                <button onClick={() => { toast.info("Camera upload coming soon!"); }} className="p-2 sm:p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Image">
                   <Camera className="h-4 w-4" />
                 </button>
-                <button className="hidden sm:block p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Video">
+                <button onClick={() => { toast.info("Video upload coming soon!"); }} className="hidden sm:block p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Video">
                   <Video className="h-4 w-4" />
                 </button>
-                <button className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl gradient-blue text-primary-foreground font-semibold text-xs sm:text-sm shadow-glow hover:opacity-90 transition-opacity">
+                <button onClick={() => { if (query.trim()) { toast.success(`Searching for "${query}" in ${activeFilter === 'all' ? 'all categories' : activeFilter}...`); navigate("/feed"); } else { toast.info("Type what you need first!"); } }} className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl gradient-blue text-primary-foreground font-semibold text-xs sm:text-sm shadow-glow hover:opacity-90 transition-opacity">
                   Search
                 </button>
               </div>
@@ -85,7 +88,7 @@ const HeroSection = () => {
                 {f.label}
               </button>
             ))}
-            <button className="flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-muted transition-colors">
+            <button onClick={() => toast.info("Location filter coming soon!")} className="flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-muted transition-colors">
               <MapPin className="h-3 w-3" />
               Location
             </button>
