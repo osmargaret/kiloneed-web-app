@@ -1,7 +1,8 @@
-import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, LayoutDashboard, Megaphone, Receipt } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, LayoutDashboard, Megaphone, Receipt, Moon, Sun } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useTheme } from "next-themes";
+import React from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +35,18 @@ const bottomItems = [
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Sign Out", url: "/", icon: LogOut },
 ];
+function ThemeToggleButton({ collapsed }: { collapsed: boolean }) {
+  const { theme, setTheme } = useTheme();
+  return (
+    <SidebarMenuButton
+      tooltip="Toggle theme"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+    >
+      {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+      {!collapsed && <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
+    </SidebarMenuButton>
+  );
+}
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -79,10 +92,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center justify-center py-2">
-          <ThemeToggle />
-        </div>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <ThemeToggleButton collapsed={collapsed} />
+          </SidebarMenuItem>
           {bottomItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title}>
