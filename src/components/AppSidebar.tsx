@@ -79,10 +79,12 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center justify-center py-2">
-          <ThemeToggle />
-        </div>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Toggle theme" onClick={() => {}} asChild>
+              <ThemeToggleRow collapsed={collapsed} />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           {bottomItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title}>
