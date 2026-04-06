@@ -57,9 +57,9 @@ const CreatePost = ({ onPost }: CreatePostProps) => {
   };
 
   return (
-    <div className="gradient-card rounded-2xl border border-border shadow-card p-4">
+    <div className="gradient-card rounded-xl border border-border p-3 shadow-card sm:rounded-2xl sm:p-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full gradient-blue flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full gradient-blue text-xs font-bold text-primary-foreground sm:h-10 sm:w-10">
           YO
         </div>
         <div className="flex-1 min-w-0">
@@ -78,14 +78,14 @@ const CreatePost = ({ onPost }: CreatePostProps) => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex flex-wrap gap-2 mt-2"
+                className="mt-2 flex flex-wrap gap-1.5 sm:gap-2"
               >
                 {mediaFiles.map((media, i) => (
                   <div key={i} className="relative group rounded-lg overflow-hidden border border-border">
                     {media.type === "image" ? (
-                      <img src={media.url} alt="" className="h-24 w-24 object-cover" />
+                      <img src={media.url} alt="" className="h-20 w-20 object-cover sm:h-24 sm:w-24" />
                     ) : (
-                      <video src={media.url} className="h-24 w-24 object-cover" />
+                      <video src={media.url} className="h-20 w-20 object-cover sm:h-24 sm:w-24" />
                     )}
                     <button
                       onClick={() => removeMedia(i)}
@@ -100,23 +100,23 @@ const CreatePost = ({ onPost }: CreatePostProps) => {
           </AnimatePresence>
 
           {/* Actions */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-            <div className="flex items-center gap-1">
+          <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-1">
               <button
                 onClick={() => imageInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition-all hover:bg-secondary hover:text-foreground sm:px-3 sm:text-xs"
               >
                 <Image className="h-4 w-4" />
                 Photo
               </button>
               <button
                 onClick={() => videoInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition-all hover:bg-secondary hover:text-foreground sm:px-3 sm:text-xs"
               >
                 <Video className="h-4 w-4" />
                 Video
               </button>
-              <span className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-muted-foreground sm:px-3 sm:text-xs">
                 <MapPin className="h-3.5 w-3.5" />
                 Auto-locate
               </span>
@@ -124,7 +124,7 @@ const CreatePost = ({ onPost }: CreatePostProps) => {
             <button
               onClick={handleSubmit}
               disabled={!text.trim() && mediaFiles.length === 0}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg gradient-blue text-sm font-bold text-primary-foreground shadow-glow hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg gradient-blue px-4 py-2 text-xs font-bold text-primary-foreground shadow-glow transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:text-sm"
             >
               <Send className="h-3.5 w-3.5" />
               Post

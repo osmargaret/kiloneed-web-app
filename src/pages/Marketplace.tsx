@@ -131,11 +131,11 @@ const Marketplace = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full overflow-hidden bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
-          <header className="sticky top-0 z-40 h-14 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-4">
+          <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur-xl sm:px-4">
             <SidebarTrigger />
             <span className="font-display text-lg font-bold text-gradient-blue">KILONEED</span>
             <span className="text-muted-foreground text-sm hidden sm:inline">/ Marketplace</span>
@@ -146,10 +146,10 @@ const Marketplace = () => {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="mx-auto w-full max-w-5xl space-y-4 px-3 py-3 sm:max-w-6xl sm:px-4 sm:py-6 sm:space-y-6">
               {/* Search & Filters Bar */}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2.5 sm:gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -159,7 +159,7 @@ const Marketplace = () => {
                     className="pl-10 bg-secondary border-border"
                   />
                 </div>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex flex-wrap items-stretch gap-2">
                   <Button
                     variant="outline"
                     size="icon"
@@ -172,7 +172,7 @@ const Marketplace = () => {
                     {view === "grid" ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
                   </Button>
                   <Select value={sort} onValueChange={setSort}>
-                    <SelectTrigger className="w-[140px] sm:w-[160px] bg-secondary border-border">
+                    <SelectTrigger className="min-w-[140px] flex-1 bg-secondary border-border sm:w-[160px] sm:flex-none">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -193,8 +193,8 @@ const Marketplace = () => {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <Card className="gradient-card border-border">
-                      <CardContent className="p-4 space-y-4">
+                      <Card className="gradient-card border-border">
+                        <CardContent className="space-y-4 p-3 sm:p-4">
                         <div>
                           <label className="text-xs font-medium text-muted-foreground mb-2 block">Category</label>
                           <div className="flex flex-wrap gap-2">
@@ -210,11 +210,11 @@ const Marketplace = () => {
                             ))}
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-4">
-                          <div>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+                          <div className="min-w-0 sm:min-w-[160px]">
                             <label className="text-xs font-medium text-muted-foreground mb-2 block">Location</label>
                             <Select value={location} onValueChange={setLocation}>
-                              <SelectTrigger className="w-[160px] bg-secondary border-border">
+                              <SelectTrigger className="w-full bg-secondary border-border sm:w-[160px]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -224,9 +224,9 @@ const Marketplace = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <label className="text-xs font-medium text-muted-foreground mb-2 block">Condition</label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               {conditions.map((c) => (
                                 <Badge
                                   key={c}
@@ -253,23 +253,23 @@ const Marketplace = () => {
                     <Sparkles className="h-4 w-4 text-primary" />
                     <span className="text-xs font-bold uppercase tracking-widest text-primary">Featured</span>
                   </div>
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {featuredProducts.map((p) => (
                       <motion.div
                         key={p.id}
                         whileHover={{ scale: 1.03 }}
-                        className="min-w-[200px] sm:min-w-[240px] gradient-card rounded-xl border border-border overflow-hidden cursor-pointer shadow-card hover:shadow-glow transition-shadow shrink-0"
+                        className="min-w-0 cursor-pointer overflow-hidden rounded-xl border border-border gradient-card shadow-card transition-shadow hover:shadow-glow"
                         onClick={() => setSelectedProduct(p)}
                       >
-                        <div className="relative h-28 sm:h-32 overflow-hidden">
+                        <div className="relative h-24 overflow-hidden sm:h-32">
                           <img src={p.image} alt={p.title} className="w-full h-full object-cover" loading="lazy" />
                           <Badge className="absolute top-2 left-2 gradient-blue text-primary-foreground border-transparent text-[10px]">
                             <Sparkles className="h-3 w-3 mr-1" /> Featured
                           </Badge>
                         </div>
-                        <div className="p-3">
-                          <p className="text-sm font-semibold text-foreground truncate">{p.title}</p>
-                          <p className="text-base font-bold text-gradient-blue">{formatPrice(p.price)}</p>
+                        <div className="p-2.5 sm:p-3">
+                          <p className="truncate text-xs font-semibold text-foreground sm:text-sm">{p.title}</p>
+                          <p className="text-sm font-bold text-gradient-blue sm:text-base">{formatPrice(p.price)}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -278,12 +278,12 @@ const Marketplace = () => {
               )}
 
               {/* Results Count */}
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground sm:text-sm">
                 {filtered.length} product{filtered.length !== 1 && "s"} found
               </p>
 
               {/* Product Grid / List */}
-              <div className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "space-y-3"}>
+              <div className={view === "grid" ? "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
                 {filtered.map((product, i) => (
                   <motion.div
                     key={product.id}
@@ -296,7 +296,7 @@ const Marketplace = () => {
                         className="gradient-card border-border overflow-hidden cursor-pointer group hover:shadow-glow transition-shadow"
                         onClick={() => setSelectedProduct(product)}
                       >
-                        <div className="relative aspect-square overflow-hidden">
+                          <div className="relative aspect-[4/3] overflow-hidden sm:aspect-square">
                           <img
                             src={product.image}
                             alt={product.title}
@@ -310,28 +310,28 @@ const Marketplace = () => {
                           )}
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleSave(product.id); }}
-                            className="absolute top-2 right-2 p-2 rounded-full bg-background/60 backdrop-blur-sm transition-colors"
+                            className="absolute top-2 right-2 rounded-full bg-background/60 p-1.5 backdrop-blur-sm transition-colors sm:p-2"
                           >
                             <Heart className={`h-4 w-4 ${product.saved ? "fill-primary text-primary" : "text-muted-foreground"}`} />
                           </button>
-                          <Badge variant="outline" className="absolute bottom-2 left-2 bg-background/70 backdrop-blur-sm text-[10px] capitalize">
+                          <Badge variant="outline" className="absolute bottom-2 left-2 bg-background/70 text-[9px] capitalize backdrop-blur-sm sm:text-[10px]">
                             {product.condition}
                           </Badge>
                         </div>
-                        <CardContent className="p-3 space-y-1">
-                          <h3 className="font-display font-semibold text-foreground text-sm truncate">{product.title}</h3>
-                          <p className="text-lg font-bold text-gradient-blue">{formatPrice(product.price)}</p>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="truncate">{product.seller}</span>
-                            <div className="flex items-center gap-1">
+                        <CardContent className="space-y-1 p-2.5 sm:p-3">
+                          <h3 className="line-clamp-1 font-display text-sm font-semibold text-foreground">{product.title}</h3>
+                          <p className="text-base font-bold text-gradient-blue sm:text-lg">{formatPrice(product.price)}</p>
+                          <div className="flex items-start justify-between gap-2 text-xs text-muted-foreground">
+                            <span className="min-w-0 truncate">{product.seller}</span>
+                            <div className="flex shrink-0 items-center gap-1">
                               <Star className="h-3 w-3 fill-primary text-primary" />
                               <span>{product.rating}</span>
                               <span className="text-muted-foreground/60">({product.reviews})</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <div className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
                             <MapPin className="h-3 w-3" />
-                            <span>{product.location}</span>
+                            <span className="truncate">{product.location}</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -340,8 +340,8 @@ const Marketplace = () => {
                         className="gradient-card border-border overflow-hidden cursor-pointer hover:shadow-glow transition-shadow"
                         onClick={() => setSelectedProduct(product)}
                       >
-                        <div className="flex">
-                          <div className="relative w-28 h-28 shrink-0 overflow-hidden">
+                        <div className="flex min-w-0">
+                          <div className="relative h-24 w-24 shrink-0 overflow-hidden sm:h-28 sm:w-28">
                             <img src={product.image} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
                             {product.featured && (
                               <Badge className="absolute top-1 left-1 gradient-blue text-primary-foreground border-transparent text-[8px] px-1">
@@ -349,16 +349,16 @@ const Marketplace = () => {
                               </Badge>
                             )}
                           </div>
-                          <CardContent className="p-3 flex-1 flex flex-col justify-between">
+                          <CardContent className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:p-3">
                             <div>
-                              <h3 className="font-display font-semibold text-foreground text-sm">{product.title}</h3>
+                              <h3 className="line-clamp-2 font-display text-sm font-semibold text-foreground">{product.title}</h3>
                               <p className="text-xs text-muted-foreground line-clamp-1">{product.description}</p>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                               <p className="text-base font-bold text-gradient-blue">{formatPrice(product.price)}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-primary text-primary" />{product.rating}</span>
-                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{product.location}</span>
+                                <span className="flex min-w-0 items-center gap-1"><MapPin className="h-3 w-3" /><span className="truncate">{product.location}</span></span>
                               </div>
                             </div>
                           </CardContent>
@@ -382,10 +382,10 @@ const Marketplace = () => {
 
       {/* Product Detail Dialog */}
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="gradient-card border-border max-w-lg mx-2 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="gradient-card border-border w-[calc(100vw-1rem)] max-w-lg max-h-[88vh] overflow-y-auto p-4 sm:p-6">
           {selectedProduct && (
             <>
-              <div className="relative h-56 -mx-6 -mt-6 overflow-hidden rounded-t-lg">
+              <div className="relative h-44 overflow-hidden rounded-t-lg -mx-4 -mt-4 sm:h-56 sm:-mx-6 sm:-mt-6">
                 <img src={selectedProduct.image} alt={selectedProduct.title} className="w-full h-full object-cover" />
                 {selectedProduct.featured && (
                   <Badge className="absolute top-3 left-3 gradient-blue text-primary-foreground border-transparent">
@@ -394,12 +394,12 @@ const Marketplace = () => {
                 )}
               </div>
               <DialogHeader className="pt-4">
-                <DialogTitle className="font-display text-xl">{selectedProduct.title}</DialogTitle>
+                <DialogTitle className="font-display text-lg sm:text-xl">{selectedProduct.title}</DialogTitle>
                 <DialogDescription>{selectedProduct.description}</DialogDescription>
               </DialogHeader>
               <div className="space-y-3 pt-2">
-                <p className="text-2xl font-bold text-gradient-blue">{formatPrice(selectedProduct.price)}</p>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <p className="text-xl font-bold text-gradient-blue sm:text-2xl">{formatPrice(selectedProduct.price)}</p>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                       {selectedProduct.sellerAvatar}
@@ -408,12 +408,12 @@ const Marketplace = () => {
                   </div>
                   <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-primary text-primary" />{selectedProduct.rating} ({selectedProduct.reviews})</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{selectedProduct.location}</span>
                   <Badge variant="outline" className="capitalize text-xs">{selectedProduct.condition}</Badge>
                 </div>
               </div>
-              <DialogFooter className="flex gap-2 pt-4">
+              <DialogFooter className="flex flex-col gap-2 pt-4 sm:flex-row">
                 <Button variant="outline" className="flex-1 gap-2" onClick={() => { toggleSave(selectedProduct.id); }}>
                   <Heart className={`h-4 w-4 ${selectedProduct.saved ? "fill-primary text-primary" : ""}`} />
                   {selectedProduct.saved ? "Saved" : "Save"}
@@ -429,7 +429,7 @@ const Marketplace = () => {
 
       {/* List Product Dialog */}
       <Dialog open={showListDialog} onOpenChange={setShowListDialog}>
-        <DialogContent className="gradient-card border-border">
+        <DialogContent className="gradient-card border-border w-[calc(100vw-1rem)] max-w-lg max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">List a Product</DialogTitle>
             <DialogDescription>Fill in the details to list your product on the marketplace.</DialogDescription>
@@ -439,7 +439,7 @@ const Marketplace = () => {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Product Title</label>
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. iPhone 15 Pro Max" className="bg-secondary border-border" />
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <div className="flex-1">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Price (₦)</label>
                 <Input type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} placeholder="0" className="bg-secondary border-border" />
@@ -460,7 +460,7 @@ const Marketplace = () => {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Condition</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {(["new", "used", "refurbished"] as const).map((c) => (
                   <Badge
                     key={c}
@@ -481,7 +481,7 @@ const Marketplace = () => {
               <ImageIcon className="h-4 w-4" /> Upload Photos
             </Button>
           </div>
-          <DialogFooter className="pt-2">
+          <DialogFooter className="flex flex-col-reverse gap-2 pt-2 sm:flex-row">
             <Button variant="outline" onClick={() => setShowListDialog(false)}>Cancel</Button>
             <Button onClick={handleListProduct} className="gradient-blue text-primary-foreground">List Product</Button>
           </DialogFooter>
