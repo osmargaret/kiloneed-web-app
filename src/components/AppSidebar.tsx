@@ -1,7 +1,8 @@
 import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, LayoutDashboard, Megaphone, Receipt, Moon, Sun } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import React from "react";
 import {
   Sidebar,
@@ -98,17 +99,31 @@ export function AppSidebar() {
           </SidebarMenuItem>
           {bottomItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <NavLink
-                  to={item.url}
-                  end
-                  className="hover:bg-muted/50"
-                  activeClassName="bg-muted text-primary font-medium"
+              {item.title === "Sign Out" ? (
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  onClick={() => {
+                    toast.success("Signed out successfully!");
+                    window.location.href = "/";
+                  }}
+                  className="hover:bg-destructive/10 hover:text-destructive"
                 >
                   <item.icon className="mr-2 h-4 w-4" />
                   {!collapsed && <span>{item.title}</span>}
-                </NavLink>
-              </SidebarMenuButton>
+                </SidebarMenuButton>
+              ) : (
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <NavLink
+                    to={item.url}
+                    end
+                    className="hover:bg-muted/50"
+                    activeClassName="bg-muted text-primary font-medium"
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              )}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
