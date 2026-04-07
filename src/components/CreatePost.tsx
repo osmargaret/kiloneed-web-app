@@ -220,49 +220,39 @@ const CreatePost = ({ onPost }: CreatePostProps) => {
                 </button>
 
                 {/* Connections / Privacy dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setPrivacyDropdown(!privacyDropdown)}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-primary transition-colors hover:bg-secondary sm:px-3 sm:text-xs"
-                  >
-                    <PrivacyIcon className="h-3.5 w-3.5" />
-                    {privacyLabel?.label || "Connections"}
-                    {privacyDropdown ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </button>
-
-                  <AnimatePresence>
-                    {privacyDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="absolute left-0 bottom-full mb-1 z-50 min-w-[150px] rounded-lg border border-border bg-popover shadow-lg"
-                      >
-                        {PRIVACY_OPTIONS.map((opt) => {
-                          const Icon = opt.icon;
-                          return (
-                            <button
-                              key={opt.value}
-                              onClick={() => {
-                                setPrivacy(opt.value);
-                                setPrivacyDropdown(false);
-                                if (opt.value === "connections") {
-                                  setConnModalOpen(true);
-                                }
-                              }}
-                              className={`flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-accent ${
-                                privacy === opt.value ? "bg-primary/10 text-primary font-semibold" : "text-foreground"
-                              }`}
-                            >
-                              <Icon className="h-3.5 w-3.5" />
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-primary transition-colors hover:bg-secondary sm:px-3 sm:text-xs"
+                    >
+                      <PrivacyIcon className="h-3.5 w-3.5" />
+                      {privacyLabel?.label || "Connections"}
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" side="top" className="min-w-[150px]">
+                    {PRIVACY_OPTIONS.map((opt) => {
+                      const Icon = opt.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={opt.value}
+                          onClick={() => {
+                            setPrivacy(opt.value);
+                            if (opt.value === "connections") {
+                              setTimeout(() => setConnModalOpen(true), 150);
+                            }
+                          }}
+                          className={`flex items-center gap-2 text-xs ${
+                            privacy === opt.value ? "bg-primary/10 text-primary font-semibold" : ""
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {opt.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Expires in */}
                 <button
