@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -111,10 +112,10 @@ const Bookmarks = () => {
                               </div>
                             </div>
                             <div className="flex flex-col gap-1 shrink-0">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => toast.info(`Opening "${item.title}"...`)}>
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => removeBookmark(item.id)} title="Remove">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { removeBookmark(item.id); toast.success("Bookmark removed"); }} title="Remove">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>

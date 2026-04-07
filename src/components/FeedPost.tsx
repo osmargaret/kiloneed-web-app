@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
   Bookmark, Share2, Repeat2, ThumbsUp, MessageCircle,
   MapPin, Clock, User, ChevronDown, ChevronUp, Send,
@@ -44,6 +45,9 @@ const FeedPost = ({ post }: { post: Post }) => {
 
   const toggle = (key: keyof typeof reactions) => {
     setReactions((prev) => ({ ...prev, [key]: !prev[key] }));
+    const labels = { saved: "Post saved", shared: "Link copied to clipboard", reposted: "Reposted to your feed", recod: "Recommendation sent" };
+    const undoLabels = { saved: "Removed from saved", shared: "Share undone", reposted: "Repost removed", recod: "Recommendation removed" };
+    toast.success(reactions[key] ? undoLabels[key] : labels[key]);
   };
 
   const handleComment = () => {
@@ -173,7 +177,7 @@ const FeedPost = ({ post }: { post: Post }) => {
                       <span className="text-[10px] text-muted-foreground">{c.time}</span>
                     </div>
                     <p className="text-xs text-foreground/80 mt-0.5 leading-relaxed">{c.text}</p>
-                    <button className="text-[10px] text-primary font-medium mt-1 hover:underline">
+                    <button className="text-[10px] text-primary font-medium mt-1 hover:underline" onClick={() => toast.info(`Opening thread with ${c.author}...`)}>
                       Open thread →
                     </button>
                   </div>

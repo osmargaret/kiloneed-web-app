@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,7 +67,7 @@ function InvoiceDialog({ txn }: { txn: typeof transactions[0] }) {
           <span>Total</span>
           <span className="font-mono">₦{txn.invoice.total.toLocaleString()}</span>
         </div>
-        <Button variant="outline" className="w-full text-xs">
+        <Button variant="outline" className="w-full text-xs" onClick={() => toast.success(`Invoice ${txn.id} downloaded`)}>
           <Download className="h-3.5 w-3.5 mr-1" /> Download Invoice
         </Button>
       </div>

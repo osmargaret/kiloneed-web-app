@@ -12,8 +12,9 @@ import {
 import {
   Image, Video, SlidersHorizontal, ShoppingBag, Star, MessageSquare,
   Bell, User, Eye, UserPlus, BellRing, Calendar, Clock, BarChart3,
-  Plus, ArrowRight, TrendingUp, MousePointerClick
+  Plus, ArrowRight, TrendingUp, MousePointerClick, Check, Pause, Play
 } from "lucide-react";
+import { toast } from "sonner";
 
 const adTypes = [
   { type: "Image & Text", icon: Image, description: "Static image with compelling copy", color: "from-blue-500/20 to-cyan-500/20" },
@@ -42,7 +43,7 @@ const statusColor = {
   ended: "bg-muted text-muted-foreground border-border",
 };
 
-function AdDetailDialog({ ad }: { ad: typeof sampleAds[0] }) {
+function AdDetailDialog({ ad, onTogglePause }: { ad: typeof sampleAds[0]; onTogglePause: (id: string) => void }) {
   const totalDays = parseInt(ad.duration);
   const remainingDays = parseInt(ad.remaining);
   const progress = totalDays > 0 ? ((totalDays - remainingDays) / totalDays) * 100 : 100;
@@ -89,13 +90,36 @@ function AdDetailDialog({ ad }: { ad: typeof sampleAds[0] }) {
           ))}
         </div>
       </div>
+      {ad.status !== "ended" && (
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => onTogglePause(ad.id)}
+        >
+          {ad.status === "paused" ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+          {ad.status === "paused" ? "Resume Ad" : "Pause Ad"}
+        </Button>
+      )}
     </DialogContent>
   );
 }
 
 const Ads = () => {
   const [filter, setFilter] = useState<"all" | "active" | "paused" | "ended">("all");
-  const filteredAds = filter === "all" ? sampleAds : sampleAds.filter((a) => a.status === filter);
+  const [ads, setAds] = useState(sampleAds);
+  const [selectedAdType, setSelectedAdType] = useState<string | null>(null);
+  const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
+
+  const filteredAds = filter === "all" ? ads : ads.filter((a) => a.status === filter);
+
+  const togglePause = (id: string) => {
+    setAds(prev => prev.map(a => {
+      if (a.id !== id) return a;
+      const newStatus = a.status === "paused" ? "active" as const : "paused" as const;
+      toast.success(`Ad ${newStatus === "paused" ? "paused" : "resumed"}: ${a.title}`);
+      return { ...a, status: newStatus };
+    }));
+  };
 
   return (
     <SidebarProvider>
@@ -114,17 +138,17 @@ const Ads = () => {
                   <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">My Ads</h1>
                   <p className="text-xs sm:text-sm text-muted-foreground">Manage your advertisements.</p>
                 </div>
-                <Button className="gradient-blue text-primary-foreground w-full sm:w-auto text-xs sm:text-sm">
+                <Button className="gradient-blue text-primary-foreground w-full sm:w-auto text-xs sm:text-sm" onClick={() => toast.success("Create Ad wizard coming soon!")}>
                   <Plus className="h-4 w-4 mr-1" /> Create Ad
                 </Button>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
                 {[
-                  { label: "Total Ads", value: sampleAds.length, icon: BarChart3 },
-                  { label: "Active", value: sampleAds.filter((a) => a.status === "active").length, icon: TrendingUp },
-                  { label: "Views", value: sampleAds.reduce((s, a) => s + a.views, 0).toLocaleString(), icon: Eye },
-                  { label: "Clicks", value: sampleAds.reduce((s, a) => s + a.clicks, 0).toLocaleString(), icon: MousePointerClick },
+                  { label: "Total Ads", value: ads.length, icon: BarChart3 },
+                  { label: "Active", value: ads.filter((a) => a.status === "active").length, icon: TrendingUp },
+                  { label: "Views", value: ads.reduce((s, a) => s + a.views, 0).toLocaleString(), icon: Eye },
+                  { label: "Clicks", value: ads.reduce((s, a) => s + a.clicks, 0).toLocaleString(), icon: MousePointerClick },
                 ].map((s) => (
                   <Card key={s.label}>
                     <CardContent className="flex items-center gap-2 sm:gap-3 py-3 sm:py-4 px-3">
@@ -189,7 +213,7 @@ const Ads = () => {
                           </CardContent>
                         </Card>
                       </DialogTrigger>
-                      <AdDetailDialog ad={ad} />
+                      <AdDetailDialog ad={ad} onTogglePause={togglePause} />
                     </Dialog>
                   ))}
                 </TabsContent>
@@ -197,46 +221,72 @@ const Ads = () => {
                 <TabsContent value="ad-types" className="space-y-4">
                   <p className="text-xs sm:text-sm text-muted-foreground">Choose how your ad will be displayed.</p>
                   <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
-                    {adTypes.map((t) => (
-                      <Card key={t.type} className="overflow-hidden hover:shadow-lg transition-all">
-                        <div className={`h-1.5 w-full bg-gradient-to-r ${t.color}`} />
-                        <CardHeader className="pb-2 px-3 sm:px-6">
-                          <div className="flex items-center gap-2">
-                            <t.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                            <CardTitle className="text-xs sm:text-sm">{t.type}</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="px-3 sm:px-6">
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">{t.description}</p>
-                          <Button size="sm" variant="outline" className="w-full text-xs">Select</Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {adTypes.map((t) => {
+                      const isSelected = selectedAdType === t.type;
+                      return (
+                        <Card key={t.type} className={`overflow-hidden hover:shadow-lg transition-all ${isSelected ? "ring-2 ring-primary" : ""}`}>
+                          <div className={`h-1.5 w-full bg-gradient-to-r ${t.color}`} />
+                          <CardHeader className="pb-2 px-3 sm:px-6">
+                            <div className="flex items-center gap-2">
+                              <t.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              <CardTitle className="text-xs sm:text-sm">{t.type}</CardTitle>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="px-3 sm:px-6">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">{t.description}</p>
+                            <Button
+                              size="sm"
+                              variant={isSelected ? "default" : "outline"}
+                              className={`w-full text-xs ${isSelected ? "gradient-blue text-primary-foreground" : ""}`}
+                              onClick={() => {
+                                setSelectedAdType(isSelected ? null : t.type);
+                                toast.success(isSelected ? "Ad type deselected" : `Selected: ${t.type}`);
+                              }}
+                            >
+                              {isSelected ? <><Check className="h-3 w-3 mr-1" /> Selected</> : "Select"}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="placements" className="space-y-3 sm:space-y-4">
                   <p className="text-xs sm:text-sm text-muted-foreground">Pick where your ad appears.</p>
                   <div className="space-y-2 sm:space-y-3">
-                    {adPlacements.map((p) => (
-                      <Card key={p.placement} className="hover:shadow-md transition-all">
-                        <CardContent className="flex items-center justify-between py-3 sm:py-4 px-3 sm:px-6 gap-2">
-                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                              <p.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                    {adPlacements.map((p) => {
+                      const isChosen = selectedPlacement === p.placement;
+                      return (
+                        <Card key={p.placement} className={`hover:shadow-md transition-all ${isChosen ? "ring-2 ring-primary" : ""}`}>
+                          <CardContent className="flex items-center justify-between py-3 sm:py-4 px-3 sm:px-6 gap-2">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <p.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-medium truncate">{p.placement}</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{p.description}</p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-medium truncate">{p.placement}</p>
-                              <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{p.description}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs">{p.price}</Badge>
+                              <Button
+                                size="sm"
+                                variant={isChosen ? "default" : "outline"}
+                                className={`text-xs h-7 ${isChosen ? "gradient-blue text-primary-foreground" : ""}`}
+                                onClick={() => {
+                                  setSelectedPlacement(isChosen ? null : p.placement);
+                                  toast.success(isChosen ? "Placement deselected" : `Chosen: ${p.placement} — ${p.price}`);
+                                }}
+                              >
+                                {isChosen ? <><Check className="h-3 w-3 mr-1" /> Chosen</> : "Choose"}
+                              </Button>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs">{p.price}</Badge>
-                            <Button size="sm" variant="outline" className="text-xs h-7 hidden sm:inline-flex">Choose</Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </TabsContent>
               </Tabs>
