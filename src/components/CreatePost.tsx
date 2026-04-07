@@ -59,9 +59,7 @@ const CreatePost = ({ onPost }: CreatePostProps) => {
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
 
   // Privacy / Connections
-  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [privacy, setPrivacy] = useState("public");
-  const [privacyDropdown, setPrivacyDropdown] = useState(false);
 
   // Choose Connections modal
   const [connModalOpen, setConnModalOpen] = useState(false);
