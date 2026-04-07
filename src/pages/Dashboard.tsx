@@ -66,7 +66,7 @@ function SubscriptionsSection() {
           </Card>
         ))}
       </div>
-      <Card className="border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors">
+      <Card className="border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => toast.success("Upgrade your plan to add more profiles!")}>
         <CardContent className="flex items-center justify-center gap-3 py-4 sm:py-6">
           <Plus className="h-5 w-5 text-primary" />
           <span className="font-medium text-primary text-sm">Add New Profile</span>

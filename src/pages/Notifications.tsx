@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -141,9 +143,26 @@ const Notifications = () => {
                   </CardContent>
                 </Card>
 
-                <Button variant="outline" onClick={() => setSelectedNotification(null)} className="w-full">
-                  <ArrowLeft className="h-4 w-4 mr-2" /> Back to Notifications
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setSelectedNotification(null)} className="flex-1">
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                  </Button>
+                  {selectedNotification.type === "connection_request" && (
+                    <Button className="flex-1 gradient-blue text-primary-foreground" onClick={() => { toast.success("Connection accepted!"); setSelectedNotification(null); }}>
+                      Accept
+                    </Button>
+                  )}
+                  {selectedNotification.type === "unread_message" && (
+                    <Button className="flex-1 gradient-blue text-primary-foreground" onClick={() => { toast.info("Opening messages..."); setSelectedNotification(null); }}>
+                      Go to Messages
+                    </Button>
+                  )}
+                  {selectedNotification.type === "special_group_invite" && (
+                    <Button className="flex-1 gradient-blue text-primary-foreground" onClick={() => { toast.success("Group invite accepted!"); setSelectedNotification(null); }}>
+                      Join Group
+                    </Button>
+                  )}
+                </div>
               </div>
             </ScrollArea>
           </main>
