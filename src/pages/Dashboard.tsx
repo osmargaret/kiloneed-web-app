@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -107,7 +108,7 @@ function AdsSection() {
               <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                 <Globe className="h-3 w-3" /> {ad.reach}
               </span>
-              <Button size="sm" variant="outline" className="text-[10px] sm:text-xs h-7">
+              <Button size="sm" variant="outline" className="text-[10px] sm:text-xs h-7" onClick={() => toast.success(`Creating ${ad.name} ad...`)}>
                 Create <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </CardContent>
@@ -151,7 +152,9 @@ function GroupDuesSection() {
                     {g.status === "active" ? "Paid" : "Pending"}
                   </Badge>
                 </div>
-                <Button size="sm" variant={g.status === "active" ? "outline" : "default"} className={`h-7 text-xs ${g.status !== "active" ? "gradient-blue text-primary-foreground" : ""}`}>
+                <Button size="sm" variant={g.status === "active" ? "outline" : "default"} className={`h-7 text-xs ${g.status !== "active" ? "gradient-blue text-primary-foreground" : ""}`}
+                  onClick={() => toast.success(g.status === "active" ? `Managing ${g.name}` : `Payment of ${g.dues} for ${g.name} processing...`)}
+                >
                   {g.status === "active" ? "Manage" : "Pay"}
                 </Button>
               </div>
