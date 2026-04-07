@@ -45,6 +45,9 @@ const FeedPost = ({ post }: { post: Post }) => {
 
   const toggle = (key: keyof typeof reactions) => {
     setReactions((prev) => ({ ...prev, [key]: !prev[key] }));
+    const labels = { saved: "Post saved", shared: "Link copied to clipboard", reposted: "Reposted to your feed", recod: "Recommendation sent" };
+    const undoLabels = { saved: "Removed from saved", shared: "Share undone", reposted: "Repost removed", recod: "Recommendation removed" };
+    toast.success(reactions[key] ? undoLabels[key] : labels[key]);
   };
 
   const handleComment = () => {
