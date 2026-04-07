@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Input } from "@/components/ui/input";
@@ -418,7 +419,7 @@ const Marketplace = () => {
                   <Heart className={`h-4 w-4 ${selectedProduct.saved ? "fill-primary text-primary" : ""}`} />
                   {selectedProduct.saved ? "Saved" : "Save"}
                 </Button>
-                <Button className="flex-1 gradient-blue text-primary-foreground gap-2">
+                <Button className="flex-1 gradient-blue text-primary-foreground gap-2" onClick={() => toast.success(`Message sent to ${selectedProduct.seller}. Check your Messages.`)}>
                   <MessageCircle className="h-4 w-4" /> Contact Seller
                 </Button>
               </DialogFooter>
@@ -477,7 +478,7 @@ const Marketplace = () => {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
               <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Describe your product..." className="bg-secondary border-border resize-none" rows={3} />
             </div>
-            <Button variant="outline" className="w-full gap-2 border-dashed border-border text-muted-foreground">
+            <Button variant="outline" className="w-full gap-2 border-dashed border-border text-muted-foreground" onClick={() => toast.info("Photo upload coming soon!")}>
               <ImageIcon className="h-4 w-4" /> Upload Photos
             </Button>
           </div>
