@@ -21,6 +21,7 @@ import Profile from "./pages/Profile.tsx";
 import Messages from "./pages/Messages.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import Bookmarks from "./pages/Bookmarks.tsx";
+import MyBusiness from "./pages/MyBusiness.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import RequireAuth from "./components/RequireAuth.tsx";
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/messages" element={<Messages />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
+            <Route path="/my-business" element={<MyBusiness />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
