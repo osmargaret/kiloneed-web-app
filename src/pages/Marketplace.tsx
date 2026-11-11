@@ -1055,12 +1055,14 @@ export default function Marketplace() {
       <Sheet open={showFiltersSheet} onOpenChange={setShowFiltersSheet}>
         <SheetContent
           side="bottom"
-          className={`p-0 rounded-t-3xl flex flex-col bg-background/98 backdrop-blur-xl border-t border-border shadow-2xl focus:outline-none [&>button.absolute]:hidden ${
-            activeFilterTab === "proximity" ? "max-h-[85dvh] h-auto" : "max-h-[90dvh] h-[90dvh]"
+          className={`p-0 rounded-t-3xl md:rounded-2xl flex flex-col bg-background/98 backdrop-blur-xl border-t md:border border-border shadow-2xl focus:outline-none [&>button.absolute]:hidden md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-lg lg:max-w-xl md:w-full ${
+            activeFilterTab === "proximity"
+              ? "max-h-[85dvh] md:max-h-[80vh] h-auto"
+              : "max-h-[90dvh] md:max-h-[80vh] h-[90dvh] md:h-auto"
           }`}
         >
           {/* Mobile Sheet Drag Handle */}
-          <div className="pt-3 pb-1 flex justify-center shrink-0">
+          <div className="pt-3 pb-1 flex justify-center shrink-0 md:hidden">
             <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
           </div>
 
