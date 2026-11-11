@@ -350,10 +350,11 @@ export const messagesApiService = {
     return api.get<any>(`/conversations/${conversationId}`);
   },
 
-  async sendMessage(conversationId: number | string, text: string, mediaUrl?: string) {
+  async sendMessage(conversationId: number | string, text?: string, mediaUrl?: string, mediaType?: string) {
     return api.post(`/conversations/${conversationId}/messages`, {
-      text,
+      text: text ?? "",
       media_url: mediaUrl,
+      media_type: mediaType,
     });
   },
 };

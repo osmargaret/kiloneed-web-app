@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { messagesApiService } from "@/services/apiClient";
+import { messagesApiService, api } from "@/services/apiClient";
 import { getEcho } from "@/services/echo";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Send, AtSign, Clock, AlertTriangle, Package, ShoppingBag, VideoIcon, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  AtSign,
+  Clock,
+  AlertTriangle,
+  Package,
+  ShoppingBag,
+  VideoIcon,
+  MessageCircle,
+  MapPin,
+  Loader2,
+  ExternalLink,
+} from "lucide-react";
 import { toast } from "sonner";
 import AttachmentMenu from "@/components/chat/AttachmentMenu";
 import VoiceRecorder from "@/components/chat/VoiceRecorder";
@@ -43,7 +56,7 @@ type MessageItem = {
   time: string;
   isMine: boolean;
   mention?: string;
-  type?: "text" | "image" | "video" | "voice" | "location";
+  type?: "text" | "image" | "video" | "voice" | "audio" | "location";
   mediaUrl?: string;
   duration?: number;
   lat?: number;
@@ -58,15 +71,39 @@ const Messages = () => {
   const [needThreads, setNeedThreads] = useState<MessageThread[]>([]);
   const [commodityThreads, setCommodityThreads] = useState<MessageThread[]>([]);
   const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
-  const [selectedGuest, setSelectedGuest] = useState<{ id: string; name: string } | null>(null);
+  const [selectedGuest, setSelectedGuest] = useState<{ id: string; name: string; avatar?: string } | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [mentioning, setMentioning] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ file: File; type: "image" | "video" } | null>(null);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [conversations, setConversations] =
-    useState<Record<string, MessageItem[]>>({});
+  const [isSending, setIsSending] = useState(false);
+  const [conversations, setConversations] = useState<Record<string, MessageItem[]>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
+
+  // Helper to format text with @mentions
+  const renderMessageContent = (text: string, isMine: boolean) => {
+    if (!text) return null;
+    const parts = text.split(/(@[A-Za-z0-9_ -]+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("@") && part.length > 1) {
+        return (
+          <span
+            key={index}
+            className={`font-semibold px-1 py-0.5 rounded text-xs ${
+              isMine
+                ? "bg-primary-foreground/25 text-primary-foreground underline decoration-primary-foreground/50"
+                : "bg-primary/15 text-primary underline decoration-primary/40"
+            }`}
+          >
+            {part}
+          </span>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
 
   // Handle direct navigation to open chat with a seller or need author
   useEffect(() => {
@@ -151,10 +188,11 @@ const Messages = () => {
         .getConversations()
         .then((remoteConvs) => {
           if (!isMounted || !Array.isArray(remoteConvs)) return;
-          const loadedThreads: MessageThread[] = remoteConvs.map((rc: any) => ({
+
+          const mapped: MessageThread[] = remoteConvs.map((rc: any) => ({
             id: String(rc.id),
-            type: rc.type === "commodity" ? "commodity" : "need",
-            title: rc.title || `Conversation #${rc.id}`,
+            title: rc.title || "Chat",
+            type: "commodity",
             status: "active",
             unread: rc.unread ? 1 : 0,
             guests: [
@@ -168,32 +206,28 @@ const Messages = () => {
               },
             ],
           }));
-          const needs = loadedThreads.filter((t) => t.type !== "commodity");
-          const commodities = loadedThreads.filter((t) => t.type === "commodity");
-          setNeedThreads((prev) => {
-            const extra = prev.filter((p) => p.id.startsWith("thread-"));
-            return [...extra, ...needs];
-          });
+
           setCommodityThreads((prev) => {
-            const extra = prev.filter((p) => p.id.startsWith("thread-"));
-            return [...extra, ...commodities];
+            const tempLocal = prev.filter((t) => isNaN(Number(t.id)));
+            const mapById = new Map<string, MessageThread>();
+            [...tempLocal, ...mapped].forEach((t) => mapById.set(t.id, t));
+            return Array.from(mapById.values());
           });
         })
         .catch(() => {});
     };
 
     fetchThreadList();
-    const interval = setInterval(fetchThreadList, 4000);
+    const listInterval = setInterval(fetchThreadList, 4000);
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      clearInterval(listInterval);
     };
   }, []);
 
-  // Poll active conversation every 2s for real-time incoming messages
+  // Poll active conversation messages every 2s
   useEffect(() => {
-    if (!selectedThread || view !== "conversation") return;
-
+    if (view !== "conversation" || !selectedThread) return;
     let isSubscribed = true;
 
     const fetchCurrentConversation = () => {
@@ -230,13 +264,15 @@ const Messages = () => {
                 : "Just now",
               isMine: (currentUserId && String(m.sender_id) === String(currentUserId)) || Boolean(m.isMine),
               mediaUrl: m.media_url,
+              type: m.media_type,
             }));
             setConversations((prev) => {
               const prevMsgs = prev[guestId] || [];
               if (
                 prevMsgs.length === msgs.length &&
                 prevMsgs[prevMsgs.length - 1]?.id === msgs[msgs.length - 1]?.id &&
-                prevMsgs[prevMsgs.length - 1]?.text === msgs[msgs.length - 1]?.text
+                prevMsgs[prevMsgs.length - 1]?.text === msgs[msgs.length - 1]?.text &&
+                prevMsgs[prevMsgs.length - 1]?.mediaUrl === msgs[msgs.length - 1]?.mediaUrl
               ) {
                 return prev;
               }
@@ -284,11 +320,12 @@ const Messages = () => {
           time: data.time || "Just now",
           isMine: Boolean(isMyMessage),
           mediaUrl: data.media_url,
+          type: data.media_type,
         };
 
         setConversations((prev) => {
           const list = prev[activeGuestId] || [];
-          if (list.some((m) => m.id === newMsg.id || (m.text === newMsg.text && m.isMine === newMsg.isMine))) {
+          if (list.some((m) => m.id === newMsg.id || (m.text === newMsg.text && m.isMine === newMsg.isMine && m.mediaUrl === newMsg.mediaUrl))) {
             return prev;
           }
           return { ...prev, [activeGuestId]: [...list, newMsg] };
@@ -302,28 +339,31 @@ const Messages = () => {
         });
 
         // Background reload conversation threads to update last messages
-        messagesApiService.getConversations().then((remoteConvs) => {
-          if (Array.isArray(remoteConvs)) {
-            const mapped: MessageThread[] = remoteConvs.map((rc: any) => ({
-              id: String(rc.id),
-              title: rc.title || "Chat",
-              type: "commodity",
-              status: "active",
-              unread: rc.unread ? 1 : 0,
-              guests: [
-                {
-                  id: String(rc.otherUser?.id || rc.id),
-                  name: rc.otherUser?.name || rc.title || "User",
-                  avatar: rc.avatar || "",
-                  lastMessage: rc.lastMessage || "No messages yet",
-                  time: rc.lastMessageTime || "Recently",
-                  unread: rc.unread ? 1 : 0,
-                },
-              ],
-            }));
-            setCommodityThreads(mapped);
-          }
-        }).catch(() => {});
+        messagesApiService
+          .getConversations()
+          .then((remoteConvs) => {
+            if (Array.isArray(remoteConvs)) {
+              const mapped: MessageThread[] = remoteConvs.map((rc: any) => ({
+                id: String(rc.id),
+                title: rc.title || "Chat",
+                type: "commodity",
+                status: "active",
+                unread: rc.unread ? 1 : 0,
+                guests: [
+                  {
+                    id: String(rc.otherUser?.id || rc.id),
+                    name: rc.otherUser?.name || rc.title || "User",
+                    avatar: rc.avatar || "",
+                    lastMessage: rc.lastMessage || "No messages yet",
+                    time: rc.lastMessageTime || "Recently",
+                    unread: rc.unread ? 1 : 0,
+                  },
+                ],
+              }));
+              setCommodityThreads(mapped);
+            }
+          })
+          .catch(() => {});
       }
     });
 
@@ -365,67 +405,176 @@ const Messages = () => {
       setSelectedGuest(null);
     }
     setAttachedFile(null);
+    setMentioning(false);
+  };
+
+  // Resolves backend numeric conversation ID
+  const resolveTargetConversationId = async (): Promise<number | null> => {
+    if (!selectedThread) return null;
+    const numThreadId = Number(selectedThread.id);
+    if (!isNaN(numThreadId) && numThreadId > 0) {
+      return numThreadId;
+    }
+    const guestId = selectedGuest?.id || selectedThread.guests[0]?.id;
+    if (guestId && !isNaN(Number(guestId)) && Number(guestId) > 0) {
+      try {
+        const res: any = await messagesApiService.startConversation(Number(guestId));
+        if (res?.conversationId) {
+          setSelectedThread((prev) => (prev ? { ...prev, id: String(res.conversationId) } : prev));
+          return Number(res.conversationId);
+        }
+      } catch {
+        return null;
+      }
+    }
+    return null;
   };
 
   const handleSend = async () => {
-    if (!newMessage.trim() && !attachedFile) return;
-    if (attachedFile) {
-      toast.success(`${attachedFile.type === "image" ? "Image" : "Video"} sent!`);
-      setAttachedFile(null);
-    }
-    if (newMessage.trim() && selectedGuest && selectedThread) {
-      const msgText = newMessage.trim();
-      const item: MessageItem = {
-        id: `m-${Date.now()}`,
-        sender: "You",
-        text: msgText,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isMine: true,
-      };
-      setConversations((prev) => ({
-        ...prev,
-        [selectedGuest.id]: [...(prev[selectedGuest.id] || []), item],
-      }));
+    if ((!newMessage.trim() && !attachedFile) || !selectedGuest || !selectedThread || isSending) return;
 
-      const numThreadId = Number(selectedThread.id);
-      if (!isNaN(numThreadId) && numThreadId > 0) {
-        messagesApiService.sendMessage(numThreadId, msgText).catch(() => {});
-      } else {
-        const numGuestId = Number(selectedGuest.id);
-        if (!isNaN(numGuestId) && numGuestId > 0) {
-          messagesApiService
-            .startConversation(numGuestId)
-            .then((res: any) => {
-              if (res?.conversationId) {
-                setSelectedThread((prev) => (prev ? { ...prev, id: String(res.conversationId) } : prev));
-                messagesApiService.sendMessage(res.conversationId, msgText).catch(() => {});
-              }
-            })
-            .catch(() => {});
+    setIsSending(true);
+    let uploadedUrl: string | undefined = undefined;
+    let uploadedType: string | undefined = undefined;
+
+    try {
+      if (attachedFile) {
+        toast.loading("Uploading attachment...", { id: "media-upload" });
+        try {
+          const uploadRes = await api.upload(attachedFile.file);
+          uploadedUrl = uploadRes.url;
+          uploadedType = uploadRes.type || attachedFile.type;
+          toast.success("Attachment ready!", { id: "media-upload" });
+        } catch (uploadErr: any) {
+          toast.error("Upload failed: " + (uploadErr.message || "Could not upload file"), { id: "media-upload" });
+          setIsSending(false);
+          return;
         }
       }
+
+      const msgText = newMessage.trim();
+      const localItem: MessageItem = {
+        id: `m-${Date.now()}`,
+        sender: "You",
+        text: msgText || (uploadedType === "video" ? "🎥 Video" : "📷 Photo"),
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        isMine: true,
+        mediaUrl: uploadedUrl,
+        type: (uploadedType as any) || (uploadedUrl ? "image" : "text"),
+      };
+
+      setConversations((prev) => ({
+        ...prev,
+        [selectedGuest.id]: [...(prev[selectedGuest.id] || []), localItem],
+      }));
+
+      const targetConvId = await resolveTargetConversationId();
+      if (targetConvId) {
+        await messagesApiService.sendMessage(targetConvId, msgText, uploadedUrl, uploadedType);
+      }
+
+      setNewMessage("");
+      setAttachedFile(null);
+      setMentioning(false);
       toast.success("Message sent!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send message");
+    } finally {
+      setIsSending(false);
     }
-    setNewMessage("");
-    setMentioning(false);
   };
 
   const handleInputChange = (val: string) => {
     setNewMessage(val);
-    setMentioning(val.includes("@"));
+    if (val.endsWith("@") || val.includes("@")) {
+      setMentioning(true);
+    } else {
+      setMentioning(false);
+    }
   };
 
   const handleFileSelect = (file: File, type: "image" | "video") => {
     setAttachedFile({ file, type });
-    toast.info(`${type === "image" ? "Image" : "Video"} attached. Send when ready.`);
+    toast.info(`${type === "image" ? "Image" : "Video"} selected. Type a caption or hit send.`);
   };
 
-  const handleVoiceSend = (blob: Blob, duration: number) => {
-    toast.success(`Voice note sent (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")})`);
+  const handleVoiceSend = async (blob: Blob, duration: number) => {
+    if (!selectedGuest || !selectedThread || isSending) return;
+
+    setIsSending(true);
+    toast.loading("Uploading voice note...", { id: "voice-upload" });
+
+    try {
+      const voiceFile = new File([blob], `voice-${Date.now()}.webm`, {
+        type: blob.type || "audio/webm",
+      });
+
+      const uploadRes = await api.upload(voiceFile);
+      toast.success("Voice note uploaded!", { id: "voice-upload" });
+
+      const localItem: MessageItem = {
+        id: `m-${Date.now()}`,
+        sender: "You",
+        text: "🎤 Voice note",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        isMine: true,
+        mediaUrl: uploadRes.url,
+        duration,
+        type: "voice",
+      };
+
+      setConversations((prev) => ({
+        ...prev,
+        [selectedGuest.id]: [...(prev[selectedGuest.id] || []), localItem],
+      }));
+
+      const targetConvId = await resolveTargetConversationId();
+      if (targetConvId) {
+        await messagesApiService.sendMessage(targetConvId, "🎤 Voice note", uploadRes.url, "audio");
+      }
+
+      toast.success("Voice note sent!");
+    } catch (err: any) {
+      toast.error("Failed to send voice note: " + (err.message || "Error"), { id: "voice-upload" });
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleLocationSend = (lat: number, lng: number, label: string) => {
-    toast.success(`Location shared: ${label}`);
+  const handleLocationSend = async (lat: number, lng: number, label: string) => {
+    if (!selectedGuest || !selectedThread || isSending) return;
+
+    setIsSending(true);
+    try {
+      const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      const localItem: MessageItem = {
+        id: `m-${Date.now()}`,
+        sender: "You",
+        text: label,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        isMine: true,
+        mediaUrl: mapUrl,
+        lat,
+        lng,
+        type: "location",
+      };
+
+      setConversations((prev) => ({
+        ...prev,
+        [selectedGuest.id]: [...(prev[selectedGuest.id] || []), localItem],
+      }));
+
+      const targetConvId = await resolveTargetConversationId();
+      if (targetConvId) {
+        await messagesApiService.sendMessage(targetConvId, label, mapUrl, "location");
+      }
+
+      toast.success("Location shared!");
+    } catch (err: any) {
+      toast.error("Failed to share location: " + (err.message || "Error"));
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleVideoCall = () => {
@@ -445,11 +594,12 @@ const Messages = () => {
         onBack={handleBack}
         hideBottomNav
         headerRight={
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleVideoCall}>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleVideoCall} title="Video call">
             <VideoIcon className="h-4 w-4" />
           </Button>
         }
-      >        <div className="flex flex-col h-full flex-1 min-h-0 justify-between">
+      >
+        <div className="flex flex-col h-full flex-1 min-h-0 justify-between">
           {isDraft && (
             <div className="bg-muted px-4 py-2 flex items-center gap-2 text-sm text-muted-foreground border-b border-border shrink-0">
               <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -469,37 +619,131 @@ const Messages = () => {
                   </p>
                 </div>
               ) : (
-                messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.isMine ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 ${
-                      msg.isMine
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted text-foreground rounded-bl-md"
-                    }`}>
-                      <p className="text-sm">
-                        {msg.mention ? (
-                          <>
-                            {msg.text.split(`@${msg.mention}`).map((part, i, arr) => (
-                              <span key={i}>
-                                {part}
-                                {i < arr.length - 1 && (
-                                  <span className={`font-semibold ${
-                                    msg.isMine ? "text-primary-foreground/90 underline" : "text-primary underline"
-                                  }`}>
-                                    @{msg.mention}
-                                  </span>
-                                )}
+                messages.map((msg) => {
+                  const isAudio =
+                    msg.type === "voice" ||
+                    msg.type === "audio" ||
+                    (msg.mediaUrl &&
+                      (msg.mediaUrl.endsWith(".webm") ||
+                        msg.mediaUrl.endsWith(".mp3") ||
+                        msg.mediaUrl.endsWith(".wav") ||
+                        msg.mediaUrl.includes("/audio")));
+
+                  const isVideo =
+                    msg.type === "video" ||
+                    (msg.mediaUrl &&
+                      (msg.mediaUrl.endsWith(".mp4") ||
+                        msg.mediaUrl.endsWith(".mov") ||
+                        msg.mediaUrl.includes("/video")));
+
+                  const isLocation =
+                    msg.type === "location" ||
+                    (msg.mediaUrl && (msg.mediaUrl.includes("maps.google.com") || msg.mediaUrl.includes("openstreetmap")));
+
+                  const isImage =
+                    !isAudio &&
+                    !isVideo &&
+                    !isLocation &&
+                    Boolean(msg.mediaUrl);
+
+                  return (
+                    <div key={msg.id} className={`flex ${msg.isMine ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm transition-all ${
+                          msg.isMine
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : "bg-muted text-foreground rounded-bl-md border border-border/40"
+                        }`}
+                      >
+                        {/* Audio / Voice Player */}
+                        {isAudio && msg.mediaUrl && (
+                          <div className="my-1.5 flex flex-col gap-1">
+                            <audio
+                              controls
+                              src={msg.mediaUrl}
+                              className="h-10 max-w-[250px] sm:max-w-[280px] rounded-lg"
+                            />
+                            {msg.duration ? (
+                              <span
+                                className={`text-[10px] ${
+                                  msg.isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                                }`}
+                              >
+                                Voice note ({Math.floor(msg.duration / 60)}:
+                                {(msg.duration % 60).toString().padStart(2, "0")})
                               </span>
-                            ))}
-                          </>
-                        ) : msg.text}
-                      </p>
-                      <p className={`text-xs mt-1 ${msg.isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                        {msg.time}
-                      </p>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {/* Video Player */}
+                        {isVideo && msg.mediaUrl && (
+                          <div className="my-1.5 rounded-xl overflow-hidden bg-black/20">
+                            <video
+                              controls
+                              src={msg.mediaUrl}
+                              className="max-h-64 max-w-full rounded-xl object-contain"
+                            />
+                          </div>
+                        )}
+
+                        {/* Image Preview */}
+                        {isImage && msg.mediaUrl && (
+                          <div className="my-1.5 rounded-xl overflow-hidden cursor-pointer group">
+                            <img
+                              src={msg.mediaUrl}
+                              alt="Attachment"
+                              className="max-h-64 max-w-full rounded-xl object-cover hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(msg.mediaUrl, "_blank")}
+                            />
+                          </div>
+                        )}
+
+                        {/* Location Link */}
+                        {isLocation && msg.mediaUrl && (
+                          <a
+                            href={msg.mediaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2 p-2.5 rounded-xl my-1.5 text-xs font-medium transition-colors ${
+                              msg.isMine
+                                ? "bg-black/20 hover:bg-black/30 text-white"
+                                : "bg-primary/10 hover:bg-primary/20 text-primary"
+                            }`}
+                          >
+                            <MapPin className="h-4 w-4 shrink-0 text-red-500" />
+                            <span className="truncate underline font-medium">
+                              {msg.text || "View Location on Google Maps"}
+                            </span>
+                            <ExternalLink className="h-3 w-3 shrink-0 opacity-70 ml-auto" />
+                          </a>
+                        )}
+
+                        {/* Message Text (when not redundant placeholder) */}
+                        {msg.text &&
+                          !(
+                            msg.mediaUrl &&
+                            (msg.text === "🎤 Voice note" ||
+                              msg.text === "📷 Photo" ||
+                              msg.text === "🎥 Video" ||
+                              isLocation)
+                          ) && (
+                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                              {renderMessageContent(msg.text, msg.isMine)}
+                            </p>
+                          )}
+
+                        <p
+                          className={`text-[10px] mt-1 text-right ${
+                            msg.isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                          }`}
+                        >
+                          {msg.time}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
             <div ref={messagesEndRef} />
@@ -507,7 +751,40 @@ const Messages = () => {
 
           {/* Input area pinned to bottom */}
           <div className="border-t border-border bg-background/95 backdrop-blur-md px-3 py-2.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shrink-0">
-            <div className="space-y-2 max-w-3xl mx-auto">
+            <div className="space-y-2 max-w-3xl mx-auto relative">
+              {/* Interactive @ Mention Dropdown */}
+              {mentioning && selectedGuest && (
+                <div className="absolute bottom-full left-0 mb-2 bg-popover/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 z-50 min-w-[220px] animate-in fade-in slide-in-from-bottom-2">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Mention in chat
+                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-muted text-left text-sm transition-colors w-full group cursor-pointer"
+                    onClick={() => {
+                      const base = newMessage.replace(/@\w*$/, "");
+                      setNewMessage(`${base}@${selectedGuest.name} `);
+                      setMentioning(false);
+                      inputRef.current?.focus();
+                    }}
+                  >
+                    <Avatar className="h-7 w-7 border border-border">
+                      <AvatarImage src={selectedGuest.avatar} />
+                      <AvatarFallback className="text-[11px] bg-primary/20 text-primary font-bold">
+                        {selectedGuest.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                        {selectedGuest.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">Tap to mention</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {/* Media Preview before sending */}
               {attachedFile && (
                 <MediaPreview
                   file={attachedFile.file}
@@ -515,35 +792,55 @@ const Messages = () => {
                   onRemove={() => setAttachedFile(null)}
                 />
               )}
+
+              {/* Action Buttons Row */}
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <AttachmentMenu
                   onFileSelect={handleFileSelect}
                   onLocationShare={() => setLocationOpen(true)}
-                  disabled={isDraft}
+                  disabled={isDraft || isSending}
                 />
-                <VoiceRecorder onSend={handleVoiceSend} disabled={isDraft} />
+
+                <VoiceRecorder onSend={handleVoiceSend} disabled={isDraft || isSending} />
+
                 <Button
                   variant={mentioning ? "default" : "outline"}
                   size="icon"
-                  className="h-9 w-9 shrink-0 text-xs"
+                  className="h-9 w-9 shrink-0 text-xs transition-colors"
                   onClick={() => {
-                    setMentioning(!mentioning);
-                    setNewMessage(mentioning ? newMessage.replace(/@$/, "") : newMessage + "@");
+                    if (mentioning) {
+                      setMentioning(false);
+                    } else {
+                      setMentioning(true);
+                      if (!newMessage.endsWith("@")) {
+                        setNewMessage((prev) => (prev ? prev + " @" : "@"));
+                      }
+                      inputRef.current?.focus();
+                    }
                   }}
-                  disabled={isDraft}
+                  disabled={isDraft || isSending}
+                  title="Mention user"
                 >
                   <AtSign className="h-4 w-4" />
                 </Button>
+
                 <Input
+                  ref={inputRef}
                   placeholder="Type a message..."
                   value={newMessage}
                   onChange={(e) => handleInputChange(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                   className="flex-1 bg-secondary/80 border-border text-sm"
-                  disabled={isDraft}
+                  disabled={isDraft || isSending}
                 />
-                <Button onClick={handleSend} disabled={(!newMessage.trim() && !attachedFile) || isDraft} className="h-9 w-9 p-0 shrink-0 gradient-blue text-primary-foreground">
-                  <Send className="h-4 w-4" />
+
+                <Button
+                  onClick={handleSend}
+                  disabled={(!newMessage.trim() && !attachedFile) || isDraft || isSending}
+                  className="h-9 w-9 p-0 shrink-0 gradient-blue text-primary-foreground shadow-md"
+                  title="Send message"
+                >
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -558,100 +855,70 @@ const Messages = () => {
     );
   }
 
-  // Guest list view
-  if (view === "guests" && selectedThread) {
-    return (
-      <MobileLayout
-        title={selectedThread.title}
-        showBack
-        onBack={handleBack}
-      >
-        <div className="p-3 space-y-3">
-          <p className="text-sm text-muted-foreground">Select a conversation</p>
-          {selectedThread.guests.map((guest) => (
-            <Card
-              key={guest.id}
-              className="cursor-pointer transition-colors hover:bg-muted/50"
-              onClick={() => handleGuestClick(guest)}
-            >
-              <CardContent className="p-4 flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={guest.avatar} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {guest.name.split(" ").map(n => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground">{guest.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{guest.lastMessage}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-xs text-muted-foreground">{guest.time}</span>
-                  {guest.unread > 0 && (
-                    <Badge className="bg-primary text-primary-foreground text-xs">{guest.unread}</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </MobileLayout>
-    );
-  }
-
-  // List view
   return (
-    <MobileLayout title="Messages">
-      <div className="p-3 max-w-3xl mx-auto space-y-4">
+    <MobileLayout title="Messages" notificationCount={0}>
+      <div className="space-y-4 p-4 pb-20">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-2 h-8 p-0.5 rounded-lg bg-muted/60 border border-border/50">
-            <TabsTrigger value="needs" className="gap-1.5 text-[11px] font-medium py-1">
-              <Package className="h-3.5 w-3.5" /> Needs
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="needs" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Needs Messages
             </TabsTrigger>
-            <TabsTrigger value="commodities" className="gap-1.5 text-[11px] font-medium py-1">
-              <ShoppingBag className="h-3.5 w-3.5" /> Commodities
+            <TabsTrigger value="commodities" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Marketplace Chats
             </TabsTrigger>
           </TabsList>
-          <TabsContent value={activeTab} className="mt-4 space-y-3">
-            {threads.length === 0 && (
-              <p className="text-center text-muted-foreground py-12">No messages yet</p>
-            )}
-            {threads.map((thread) => (
-              <Card
-                key={thread.id}
-                className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                  thread.status === "expired" ? "opacity-50" : ""
-                } ${thread.status === "draft" ? "border-dashed border-muted-foreground/40" : ""}`}
-                onClick={() => handleThreadClick(thread)}
-              >
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground truncate">{thread.title}</h3>
-                      {thread.status === "expired" && (
-                        <Badge variant="destructive" className="text-xs gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Expired
+
+          <TabsContent value={activeTab} className="mt-4">
+            {threads.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                  <MessageCircle className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-medium text-foreground">No conversations yet</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[260px]">
+                  Browse the feed or marketplace to start a conversation with buyers and sellers.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {threads.map((thread) => (
+                  <Card
+                    key={thread.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors border-border/60"
+                    onClick={() => handleThreadClick(thread)}
+                  >
+                    <CardContent className="p-3.5 flex items-center gap-3">
+                      <Avatar className="h-11 w-11 border border-border">
+                        <AvatarImage src={thread.guests[0]?.avatar} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                          {thread.title.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-medium text-foreground truncate">
+                            {thread.guests[0]?.name || thread.title}
+                          </h4>
+                          <span className="text-[11px] text-muted-foreground shrink-0">
+                            {thread.guests[0]?.time || "Recently"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {thread.guests[0]?.lastMessage || "Tap to chat"}
+                        </p>
+                      </div>
+                      {thread.unread > 0 && (
+                        <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
+                          {thread.unread}
                         </Badge>
                       )}
-                      {thread.status === "draft" && (
-                        <Badge variant="secondary" className="text-xs">Draft</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {thread.guests.length} conversation{thread.guests.length !== 1 ? "s" : ""}
-                      {"expiresAt" in thread && thread.status === "active" && (
-                        <span className="ml-2 inline-flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> Expires {thread.expiresAt}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  {thread.unread > 0 && (
-                    <Badge className="bg-primary text-primary-foreground ml-3">{thread.unread}</Badge>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
