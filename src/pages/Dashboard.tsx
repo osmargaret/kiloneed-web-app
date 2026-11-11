@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { adsApiService, walletApiService } from "@/services/apiClient";
+import { MobileLayout } from "@/components/MobileLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,11 @@ function SubscriptionsSection() {
                 variant={plan.current ? "outline" : plan.popular ? "default" : "secondary"}
                 className={`w-full text-[10px] sm:text-xs h-7 sm:h-9 ${plan.popular ? "gradient-blue text-primary-foreground" : ""}`}
                 disabled={plan.current}
+                onClick={async () => {
+                  // Plans and prices are defined by the server - choose and pay on the Subscription page.
+                  if (plan.current) return;
+                  window.location.assign("/subscription");
+                }}
               >
                 {plan.current ? "Current" : "Upgrade"}
               </Button>
@@ -108,7 +113,21 @@ function AdsSection() {
               <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                 <Globe className="h-3 w-3" /> {ad.reach}
               </span>
-              <Button size="sm" variant="outline" className="text-[10px] sm:text-xs h-7" onClick={() => toast.success(`Creating ${ad.name} ad...`)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-[10px] sm:text-xs h-7"
+                onClick={() => {
+                  adsApiService
+                    .createAd({
+                      title: `${ad.name} Promoted Campaign`,
+                      description: ad.description,
+                      budget: 15000,
+                    })
+                    .catch(() => {});
+                  toast.success(`Created ${ad.name} campaign & synced to Admin Portal!`);
+                }}
+              >
                 Create <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </CardContent>
@@ -258,45 +277,34 @@ function simulateAI(text: string): string {
 
 const Dashboard = () => {
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-40 h-14 flex items-center gap-2 sm:gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 sm:px-4">
-            <SidebarTrigger />
-            <span className="font-display text-base sm:text-lg font-bold text-gradient-blue">KILONEED</span>
-          </header>
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-              <div className="mb-4 sm:mb-6">
-                <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Dashboard</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground">Manage subscriptions, ads, groups, and AI.</p>
-              </div>
-              <Tabs defaultValue="subscriptions" className="space-y-4 sm:space-y-6">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/50 h-auto">
-                  <TabsTrigger value="subscriptions" className="flex items-center gap-1 text-[10px] sm:text-xs">
-                    <CreditCard className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Subscriptions</span><span className="sm:hidden">Subs</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="ads" className="flex items-center gap-1 text-[10px] sm:text-xs">
-                    <Megaphone className="h-3.5 w-3.5" /> Ads
-                  </TabsTrigger>
-                  <TabsTrigger value="groups" className="flex items-center gap-1 text-[10px] sm:text-xs">
-                    <Users className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Group Dues</span><span className="sm:hidden">Groups</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="kiloai" className="flex items-center gap-1 text-[10px] sm:text-xs">
-                    <Sparkles className="h-3.5 w-3.5" /> KiloAI
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="subscriptions"><SubscriptionsSection /></TabsContent>
-                <TabsContent value="ads"><AdsSection /></TabsContent>
-                <TabsContent value="groups"><GroupDuesSection /></TabsContent>
-                <TabsContent value="kiloai"><KiloAISection /></TabsContent>
-              </Tabs>
-            </div>
-          </main>
+    <MobileLayout title="Dashboard">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage subscriptions, ads, groups, and AI.</p>
         </div>
+        <Tabs defaultValue="subscriptions" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/50 h-auto">
+            <TabsTrigger value="subscriptions" className="flex items-center gap-1 text-[10px] sm:text-xs">
+              <CreditCard className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Subscriptions</span><span className="sm:hidden">Subs</span>
+            </TabsTrigger>
+            <TabsTrigger value="ads" className="flex items-center gap-1 text-[10px] sm:text-xs">
+              <Megaphone className="h-3.5 w-3.5" /> Ads
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="flex items-center gap-1 text-[10px] sm:text-xs">
+              <Users className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Group Dues</span><span className="sm:hidden">Groups</span>
+            </TabsTrigger>
+            <TabsTrigger value="kiloai" className="flex items-center gap-1 text-[10px] sm:text-xs">
+              <Sparkles className="h-3.5 w-3.5" /> KiloAI
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="subscriptions"><SubscriptionsSection /></TabsContent>
+          <TabsContent value="ads"><AdsSection /></TabsContent>
+          <TabsContent value="groups"><GroupDuesSection /></TabsContent>
+          <TabsContent value="kiloai"><KiloAISection /></TabsContent>
+        </Tabs>
       </div>
-    </SidebarProvider>
+    </MobileLayout>
   );
 };
 

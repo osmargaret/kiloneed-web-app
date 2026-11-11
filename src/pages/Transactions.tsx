@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { walletApiService } from "@/services/apiClient";
+import { MobileLayout } from "@/components/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -17,7 +17,18 @@ import {
   Download, Filter, TrendingUp, Wallet
 } from "lucide-react";
 
-const transactions = [
+export interface TransactionItem {
+  id: string;
+  description: string;
+  type: 'subscription' | 'ad' | 'dues' | 'deposit' | 'payment' | 'withdrawal';
+  amount: number;
+  date: string;
+  status: 'completed' | 'pending' | 'failed' | 'successful';
+  method: string;
+  invoice?: { items: { name: string; qty: number; price: number }[]; subtotal: number; tax: number; total: number };
+}
+
+const transactions: TransactionItem[] = [
   { id: "TXN-001", description: "Plus Profile Subscription", type: "subscription" as const, amount: -2500, date: "2026-03-28", status: "completed" as const, method: "Visa •••• 4242", invoice: { items: [{ name: "Plus Plan - Monthly", qty: 1, price: 2500 }], subtotal: 2500, tax: 0, total: 2500 } },
   { id: "TXN-002", description: "Marketplace Featured Ad", type: "ad" as const, amount: -5000, date: "2026-03-25", status: "completed" as const, method: "Visa •••• 4242", invoice: { items: [{ name: "Marketplace Featured - 7 days", qty: 1, price: 5000 }], subtotal: 5000, tax: 0, total: 5000 } },
   { id: "TXN-003", description: "Lagos Tech Buyers - Group Dues", type: "dues" as const, amount: -500, date: "2026-03-20", status: "completed" as const, method: "Visa •••• 4242", invoice: { items: [{ name: "Lagos Tech Buyers - Monthly Dues", qty: 1, price: 500 }], subtotal: 500, tax: 0, total: 500 } },
@@ -34,13 +45,13 @@ const statusStyle: Record<string, string> = {
   failed: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
-function InvoiceDialog({ txn }: { txn: typeof transactions[0] }) {
+function InvoiceDialog({ txn }: { txn: TransactionItem }) {
   return (
     <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="text-sm sm:text-base flex items-center gap-2">
           <Receipt className="h-4 w-4 text-primary" /> {txn.id}
-        </DialogTitle>
+        </DialogTitle><DialogDescription className="sr-only">Invoice details</DialogDescription>
       </DialogHeader>
       <div className="space-y-3 sm:space-y-4">
         <div className="flex justify-between text-xs sm:text-sm">
@@ -77,24 +88,99 @@ function InvoiceDialog({ txn }: { txn: typeof transactions[0] }) {
 
 const Transactions = () => {
   const [typeFilter, setTypeFilter] = useState("all");
-  const filtered = typeFilter === "all" ? transactions : transactions.filter((t) => t.type === typeFilter);
-  const totalSpent = transactions.filter((t) => t.status === "completed").reduce((s, t) => s + Math.abs(t.amount), 0);
+  const [txList, setTxList] = useState<TransactionItem[]>([]);
+
+  useEffect(() => {
+    walletApiService
+      .getTransactions()
+      .then((res) => {
+        if (res && Array.isArray(res.transactions) && res.transactions.length > 0) {
+          const mapped = res.transactions.map((rt: any) => ({
+            id: rt.reference || `TXN-${rt.id}`,
+            description: rt.description || "Platform Transaction",
+            type: (rt.type === "payment" ? "subscription" : "ad") as
+              | "subscription"
+              | "ad"
+              | "dues",
+            amount: rt.type === "deposit" ? Number(rt.amount) : -Number(rt.amount),
+            date: (rt.created_at || "2026-11-09").slice(0, 10),
+            status: (rt.status === "successful" ? "completed" : rt.status || "completed") as
+              | "completed"
+              | "pending"
+              | "failed",
+            method: "Paystack •••• NGN",
+            invoice: {
+              items: [
+                {
+                  name: rt.description || "Kiloneed Service",
+                  qty: 1,
+                  price: Number(rt.amount),
+                },
+              ],
+              subtotal: Number(rt.amount),
+              tax: 0,
+              total: Number(rt.amount),
+            },
+          }));
+          setTxList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const filtered = typeFilter === "all" ? txList : txList.filter((t) => t.type === typeFilter);
+  const totalSpent = txList.filter((t) => t.status === "completed").reduce((s, t) => s + Math.abs(t.amount), 0);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-40 h-14 flex items-center gap-2 sm:gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-3 sm:px-4">
-            <SidebarTrigger />
-            <span className="font-display text-base sm:text-lg font-bold text-gradient-blue">KILONEED</span>
-          </header>
-
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-              <div className="mb-4 sm:mb-6">
-                <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Transactions</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground">View all payments and invoices.</p>
+    <MobileLayout title="Transactions">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+              <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Transactions</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">View all payments and Paystack invoices.</p>
+                </div>
+                <Button
+                  size="sm"
+                  className="gradient-blue text-primary-foreground gap-1.5 text-xs"
+                  onClick={async () => {
+                    const amount = 25000;
+                    toast.loading("Initializing Paystack Checkout...", { id: "psk-init" });
+                    try {
+                      const res = await walletApiService.initializePaystack({
+                        amount,
+                        type: "deposit",
+                        description: "Paystack Wallet Funding",
+                      });
+                      const newEntry = {
+                        id: res.reference || `TXN-PSK-${Date.now()}`,
+                        description: "Paystack Wallet Funding",
+                        type: "subscription" as const,
+                        amount: amount,
+                        date: new Date().toISOString().slice(0, 10),
+                        status: "pending" as const,
+                        method: "Paystack •••• NGN",
+                        invoice: {
+                          items: [{ name: "Paystack Wallet Funding", qty: 1, price: amount }],
+                          subtotal: amount,
+                          tax: 0,
+                          total: amount,
+                        },
+                      };
+                      setTxList((prev) => [newEntry, ...prev]);
+                      toast.success(
+                        `Paystack Checkout initialized (${res.reference})!`,
+                        { id: "psk-init" }
+                      );
+                      if (res.authorization_url) {
+                        window.open(res.authorization_url, "_blank", "noopener,noreferrer");
+                      }
+                    } catch {
+                      toast.error("Could not reach Paystack gateway", { id: "psk-init" });
+                    }
+                  }}
+                >
+                  <CreditCard className="h-3.5 w-3.5" /> Fund with Paystack (₦25,000)
+                </Button>
               </div>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -116,7 +202,7 @@ const Transactions = () => {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] sm:text-xs text-muted-foreground">Month</p>
-                      <p className="text-xs sm:text-lg font-bold font-mono truncate">₦{transactions.filter((t) => t.date.startsWith("2026-03") && t.status === "completed").reduce((s, t) => s + Math.abs(t.amount), 0).toLocaleString()}</p>
+                      <p className="text-xs sm:text-lg font-bold font-mono truncate">₦{txList.filter((t) => t.status === "completed").reduce((s, t) => s + Math.abs(t.amount), 0).toLocaleString()}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -127,7 +213,7 @@ const Transactions = () => {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] sm:text-xs text-muted-foreground">Count</p>
-                      <p className="text-xs sm:text-lg font-bold">{transactions.length}</p>
+                      <p className="text-xs sm:text-lg font-bold">{txList.length}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -149,7 +235,18 @@ const Transactions = () => {
               </div>
 
               <div className="space-y-2">
-                {filtered.map((txn) => (
+                {filtered.length === 0 ? (
+                  <div className="text-center py-12 px-4 rounded-2xl bg-card border border-dashed border-border/80">
+                    <Receipt className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
+                    <h4 className="text-sm font-semibold text-foreground">No transactions found</h4>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                      {typeFilter !== "all"
+                        ? `No transactions categorized under "${typeLabels[typeFilter] || typeFilter}".`
+                        : "Your wallet deposits, subscription charges, and advertising payments will appear here."}
+                    </p>
+                  </div>
+                ) : (
+                  filtered.map((txn) => (
                   <Dialog key={txn.id}>
                     <DialogTrigger asChild>
                       <Card className="cursor-pointer hover:shadow-md transition-all group">
@@ -179,13 +276,11 @@ const Transactions = () => {
                     </DialogTrigger>
                     <InvoiceDialog txn={txn} />
                   </Dialog>
-                ))}
+                ))
+              )}
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
+    </MobileLayout>
   );
 };
 

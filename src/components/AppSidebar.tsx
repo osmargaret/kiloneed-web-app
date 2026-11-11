@@ -1,4 +1,4 @@
-import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, LayoutDashboard, Megaphone, Receipt, Moon, Sun } from "lucide-react";
+import { Home, ShoppingBag, Users, UsersRound, Bookmark, Bell, MessageCircle, User, Settings, LogOut, Megaphone, Crown, Moon, Sun } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
@@ -27,9 +27,8 @@ const mainItems = [
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Messages", url: "/messages", icon: MessageCircle },
   { title: "Profile", url: "/profile", icon: User },
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Ads", url: "/ads", icon: Megaphone },
-  { title: "Transactions", url: "/transactions", icon: Receipt },
+  { title: "Subscription", url: "/subscription", icon: Crown },
 ];
 
 const bottomItems = [

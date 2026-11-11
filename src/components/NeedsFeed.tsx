@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { needsApiService } from "@/services/apiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bookmark, Share2, Repeat2, ThumbsUp, MessageCircle,
   MapPin, Clock, User, ChevronDown, ChevronUp, Send,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Comment {
   id: number;
@@ -16,6 +18,7 @@ interface Need {
   id: number;
   author: string;
   avatar: string;
+  avatarUrl?: string;
   location: string;
   radius: string;
   text: string;
@@ -28,59 +31,6 @@ interface Need {
   recos: number;
   comments: Comment[];
 }
-
-const mockNeeds: Need[] = [
-  {
-    id: 1,
-    author: "Adebayo Ogunlesi",
-    avatar: "AO",
-    location: "Ikeja, Lagos",
-    radius: "5km",
-    text: "I need a reliable electrician for a full rewiring job in a 3-bedroom flat. Must be available this weekend. Budget ₦80,000–₦120,000.",
-    postedAt: "2h ago",
-    expiresAt: "3 days left",
-    saves: 12,
-    shares: 4,
-    reposts: 2,
-    recos: 8,
-    comments: [
-      { id: 1, author: "ChiefSparks NG", text: "I can handle this. 10 years experience. DM me for my portfolio.", time: "1h ago" },
-      { id: 2, author: "Emeka Voltage", text: "Available this Saturday. Licensed with NEMSA cert. ₦95k all inclusive.", time: "45m ago" },
-    ],
-  },
-  {
-    id: 2,
-    author: "Fatima Bello",
-    avatar: "FB",
-    location: "Wuse, Abuja",
-    radius: "10km",
-    text: "Looking for a Samsung Galaxy S24 Ultra, 256GB, any colour. Must be brand new and sealed. Budget up to ₦750,000.",
-    postedAt: "5h ago",
-    expiresAt: "7 days left",
-    saves: 24,
-    shares: 11,
-    reposts: 5,
-    recos: 15,
-    comments: [
-      { id: 1, author: "PhoneHub Abuja", text: "We have Phantom Black in stock. ₦720k. Can deliver today.", time: "3h ago" },
-    ],
-  },
-  {
-    id: 3,
-    author: "Chinedu Okoro",
-    avatar: "CO",
-    location: "GRA, Port Harcourt",
-    radius: "3km",
-    text: "Need a professional photographer for a product shoot. 50 items for an online store. Studio or on-location.",
-    postedAt: "1d ago",
-    expiresAt: "5 days left",
-    saves: 7,
-    shares: 3,
-    reposts: 1,
-    recos: 4,
-    comments: [],
-  },
-];
 
 const NeedCard = ({ need }: { need: Need }) => {
   const [showComments, setShowComments] = useState(false);
@@ -110,9 +60,12 @@ const NeedCard = ({ need }: { need: Need }) => {
       {/* Header */}
       <div className="p-5 pb-0">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full gradient-blue flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
-            {need.avatar}
-          </div>
+          <Avatar className="w-10 h-10 shrink-0 ring-1 ring-border shadow-xs">
+            <AvatarImage src={need.avatarUrl} alt={need.author} className="object-cover" />
+            <AvatarFallback className="gradient-blue text-xs font-bold text-primary-foreground">
+              {need.avatar || need.author.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-display font-semibold text-foreground text-sm">{need.author}</span>
@@ -121,7 +74,7 @@ const NeedCard = ({ need }: { need: Need }) => {
             <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
-                {need.location} · {need.radius} radius
+                {need.location}
               </span>
               <span className="flex items-center gap-1 text-primary">
                 <Clock className="h-3 w-3" />
@@ -214,6 +167,36 @@ const NeedCard = ({ need }: { need: Need }) => {
 };
 
 const NeedsFeed = () => {
+  const [needs, setNeeds] = useState<Need[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    needsApiService.getFeed({ page: 1 })
+      .then((res) => {
+        if (Array.isArray(res?.needs)) {
+          const mapped: Need[] = res.needs.map((n: any) => ({
+            id: n.id,
+            author: n.author || n.user?.name || "Member",
+            avatar: (n.author || n.user?.name || "KN").slice(0, 2).toUpperCase(),
+            avatarUrl: n.avatar || n.user?.avatar,
+            location: n.location || "",
+            radius: n.radius || "CSC",
+            text: n.text || n.title || "",
+            image: n.media?.[0]?.url || n.image,
+            postedAt: n.postedAt || "Recently",
+            expiresAt: n.expiresAt || "Active",
+            saves: n.saves || 0,
+            shares: n.shares || 0,
+            reposts: n.reposts || 0,
+            recos: n.recos || 0,
+            comments: Array.isArray(n.comments) ? n.comments : [],
+          }));
+          setNeeds(mapped);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
   return (
     <section className="py-8 sm:py-16" id="needs">
       <div className="container mx-auto px-3 sm:px-4 max-w-2xl overflow-x-hidden">
@@ -236,7 +219,7 @@ const NeedsFeed = () => {
         </motion.div>
 
         <div className="space-y-4">
-          {mockNeeds.map((need) => (
+          {needs.map((need) => (
             <NeedCard key={need.id} need={need} />
           ))}
         </div>

@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { MapPin, Navigation, Loader2 } from "lucide-react";
@@ -67,6 +68,7 @@ const LocationPicker = ({ open, onOpenChange, onSend }: LocationPickerProps) => 
             <MapPin className="h-5 w-5 text-primary" />
             Share Location
           </DialogTitle>
+          <DialogDescription className="sr-only">Share your current location</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-[250px] flex items-center justify-center rounded-lg overflow-hidden border border-border bg-muted">

@@ -1,332 +1,714 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { toast } from "sonner";
+import { authService } from "@/services/authService";
+import { needsStore } from "@/services/needsStore";
+import { productsApiService, connectionsApiService, groupsApiService } from "@/services/apiClient";
+import { MobileLayout } from "@/components/MobileLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, ShoppingBag, Users, UsersRound, Settings, Megaphone, Receipt,
-  UserPlus, ThumbsUp, AtSign, AlertTriangle, Crown, MapPin, Edit,
-  ExternalLink, Star,
+  ShoppingBag, Users, UsersRound, Settings as SettingsIcon, Megaphone, Receipt,
+  UserPlus, ThumbsUp, AtSign, Crown, MapPin, Edit,
+  ExternalLink, Star, Camera, Share2, Copy, CheckCircle2, MessageCircle,
+  Plus, Sparkles, Trash2, ChevronLeft, ChevronRight
 } from "lucide-react";
 
-// ─── Mock user data ───
-const currentUser = {
-  name: "John Doe",
-  avatar: "JD",
-  location: "Lagos, Nigeria",
+// User profile data fetched fresh from localStorage
+const getInitialUserData = () => ({
+  name: localStorage.getItem("kiloneed_user_name") || "Your Store",
+  initials: (localStorage.getItem("kiloneed_user_name") || "YS").slice(0, 2).toUpperCase(),
+  headline: localStorage.getItem("kiloneed_headline") || "Electronics & Tech Merchant",
+  location: localStorage.getItem("kiloneed_location") || "Lagos, Nigeria",
   category: "Electronics",
-  subscription: "Premium",
-  subscriptionExpiry: "Dec 2026",
-  recommendations: 87,
-  mentions: 34,
-  abuseReports: 0,
-  profileLink: "kiloneed.com/johndoe",
-};
-
-const mockNeeds = [
-  { id: 1, text: "Looking for wholesale laptop chargers, USB-C compatible.", date: "3 hours ago", reactions: 12 },
-  { id: 2, text: "Need 200 units of screen protectors for iPhone 15 series.", date: "1 day ago", reactions: 8 },
-  { id: 3, text: "Searching for a reliable logistics partner within Lagos.", date: "3 days ago", reactions: 22 },
-];
-
-const mockCommodities = [
-  { id: 1, name: "USB-C Charger 65W", price: "₦8,500", stock: 150 },
-  { id: 2, name: "LED Panel 60x60", price: "₦12,500", stock: 45 },
-  { id: 3, name: "HDMI Cable 2m", price: "₦2,200", stock: 300 },
-];
-
-const mockConnections = [
-  { id: 1, name: "Adaeze Okafor", avatar: "AO", mutual: 12 },
-  { id: 2, name: "Emeka Nwosu", avatar: "EN", mutual: 15 },
-  { id: 3, name: "Halima Sani", avatar: "HS", mutual: 9 },
-];
-
-const mockGroups = [
-  { id: 1, name: "Lagos Electronics Traders", members: 340, role: "Admin" },
-  { id: 2, name: "Bulk Importers Network", members: 128, role: "Member" },
-];
-
-const mockAds = [
-  { id: 1, title: "Featured: USB-C Chargers", type: "Marketplace", status: "Active", views: 1240 },
-  { id: 2, title: "Profile Sidebar Ad", type: "Profile", status: "Paused", views: 580 },
-];
-
-const mockTransactions = [
-  { id: 1, description: "Premium Subscription", amount: "₦15,000", date: "Jan 15, 2025", status: "Completed" },
-  { id: 2, description: "Marketplace Ad — 7 days", amount: "₦5,000", date: "Feb 02, 2025", status: "Completed" },
-  { id: 3, description: "Group Dues — Bulk Importers", amount: "₦2,000", date: "Mar 01, 2025", status: "Pending" },
-];
+  subscription: "Free",
+  subscriptionExpiry: "Active",
+  recommendations: 0,
+  mentions: 0,
+  connectionsCount: 0,
+  profileLink: "kiloneed.com/profile",
+});
 
 const subscriptionTiers = [
   { name: "Free", price: "₦0/mo", features: ["1 Profile", "Basic needs posting", "5 groups"] },
   { name: "Premium", price: "₦5,000/mo", features: ["3 Profiles", "Priority visibility", "50 groups", "Ad discounts"] },
-  { name: "Business", price: "₦15,000/mo", features: ["10 Profiles", "Featured placement", "Unlimited groups", "Analytics dashboard"] },
+  { name: "Business", price: "₦15,000/mo", features: ["10 Profiles", "Featured placement", "Unlimited groups", "Analytics"] },
 ];
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [addProfileOpen, setAddProfileOpen] = useState(false);
-  const [newProfileName, setNewProfileName] = useState("");
-  const [newProfileCategory, setNewProfileCategory] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const tabsListRef = useRef<HTMLDivElement>(null);
 
-  const stats = [
-    { icon: ThumbsUp, label: "Recos", value: currentUser.recommendations },
-    { icon: AtSign, label: "Mentions", value: currentUser.mentions },
-    { icon: AlertTriangle, label: "Reports", value: currentUser.abuseReports },
+  // User profile state
+  const [user, setUser] = useState(getInitialUserData);
+  const [activeTab, setActiveTab] = useState("needs");
+  const tabKeys = ["needs", "commodities", "connections", "groups", "plans"];
+
+  // Real user data collections
+  const [userNeeds, setUserNeeds] = useState<any[]>([]);
+  const [userCommodities, setUserCommodities] = useState<any[]>([]);
+  const [userConnections, setUserConnections] = useState<any[]>([]);
+  const [userGroups, setUserGroups] = useState<any[]>([]);
+
+  const [avatarImage, setAvatarImage] = useState<string>(() => {
+    return localStorage.getItem("kiloneed_avatar") || "";
+  });
+  const [coverImage, setCoverImage] = useState<string>(() => {
+    return localStorage.getItem("kiloneed_cover_image") || "";
+  });
+
+  // Sync state whenever page becomes visible or focused (e.g. returning from Settings)
+  useEffect(() => {
+    const syncUserData = () => {
+      setUser(getInitialUserData());
+      setAvatarImage(localStorage.getItem("kiloneed_avatar") || "");
+      setCoverImage(localStorage.getItem("kiloneed_cover_image") || "");
+      authService.getMe()
+        .then((res) => { const remoteUser = res?.user;
+          if (remoteUser?.name) {
+            setUser((prev) => ({
+              ...prev,
+              name: remoteUser.name,
+              location: remoteUser.location || prev.location,
+              category: remoteUser.industry || prev.category,
+            }));
+          }
+        })
+        .catch(() => {});
+    };
+    syncUserData();
+    window.addEventListener("focus", syncUserData);
+    window.addEventListener("storage", syncUserData);
+    return () => {
+      window.removeEventListener("focus", syncUserData);
+      window.removeEventListener("storage", syncUserData);
+    };
+  }, []);
+
+  // Fetch real user needs, commodities, connections, and groups
+  useEffect(() => {
+    const rawNeeds = needsStore.getRawNeeds();
+    const myNeeds = rawNeeds.filter((n) => n.author === user.name || n.distanceKm === 0);
+    setUserNeeds(myNeeds);
+
+    productsApiService.getProducts()
+      .then((res: any) => {
+        if (Array.isArray(res)) setUserCommodities(res);
+      })
+      .catch(() => {});
+
+    connectionsApiService.getConnections()
+      .then((res: any) => {
+        if (Array.isArray(res)) {
+          setUserConnections(res);
+          setUser((prev) => ({ ...prev, connectionsCount: res.length }));
+        }
+      })
+      .catch(() => {});
+
+    groupsApiService.getMyGroups()
+      .then((res: any) => {
+        if (Array.isArray(res)) setUserGroups(res);
+      })
+      .catch(() => {});
+  }, [user.name]);
+
+  const tabItems = [
+    { id: "needs", label: `Needs (${userNeeds.length})`, icon: null },
+    { id: "commodities", label: `Items (${userCommodities.length})`, icon: ShoppingBag },
+    { id: "connections", label: `Connections (${userConnections.length})`, icon: Users },
+    { id: "groups", label: `Groups (${userGroups.length})`, icon: UsersRound },
+    { id: "plans", label: `Plans`, icon: Crown },
   ];
 
-  return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b border-border px-4 gap-4 bg-card">
-            <SidebarTrigger />
-            <h1 className="text-lg font-semibold text-foreground">My Profile</h1>
-          </header>
+  // Smoothly scroll active tab pill into view when tab changes
+  useEffect(() => {
+    const el = document.getElementById(`profile-tab-${activeTab}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [activeTab]);
 
-          <main className="flex-1 overflow-y-auto">
-            {/* ── Profile Header ── */}
-            <div className="bg-gradient-to-r from-primary/20 to-accent/30 p-4 sm:p-6 md:p-10">
-              <div className="max-w-5xl mx-auto flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-                <div className="relative shrink-0">
-                  <Avatar className="h-20 w-20 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl sm:text-3xl font-bold">{currentUser.avatar}</AvatarFallback>
-                  </Avatar>
-                  <button className="absolute bottom-0 right-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-card border border-border flex items-center justify-center shadow hover:bg-muted transition-colors">
-                    <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
-                  </button>
+  // Swipe gesture handler
+  const handleSwipe = (direction: "left" | "right") => {
+    const currentIndex = tabKeys.indexOf(activeTab);
+    if (direction === "left" && currentIndex < tabKeys.length - 1) {
+      setActiveTab(tabKeys[currentIndex + 1]);
+    } else if (direction === "right" && currentIndex > 0) {
+      setActiveTab(tabKeys[currentIndex - 1]);
+    }
+  };
+
+  // Drag-to-scroll support for the horizontal tabs menu
+  const isDraggingTabs = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!tabsListRef.current) return;
+    isDraggingTabs.current = true;
+    startX.current = e.pageX - tabsListRef.current.offsetLeft;
+    scrollLeft.current = tabsListRef.current.scrollLeft;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingTabs.current || !tabsListRef.current) return;
+    const x = e.pageX - tabsListRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5;
+    tabsListRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+
+  const handlePointerUp = () => {
+    isDraggingTabs.current = false;
+  };
+
+  // Helper to compress and resize images so they never exceed browser localStorage limits
+  const compressImage = (
+    file: File,
+    maxWidth: number,
+    maxHeight: number,
+    quality: number = 0.82
+  ): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width / height > maxWidth / maxHeight) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle avatar upload from file picker
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const compressed = await compressImage(file, 400, 400, 0.85);
+      setAvatarImage(compressed);
+      try {
+        localStorage.setItem("kiloneed_avatar", compressed);
+      } catch (err) {
+        console.warn("Could not save avatar to localStorage:", err);
+      }
+      authService.updateProfile({ avatar: compressed }).catch(() => {});
+      toast.success("Profile picture updated!");
+    } catch {
+      toast.error("Error processing profile picture");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  // Handle cover image upload
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      toast.loading("Processing cover image...", { id: "cover-upload" });
+      const compressed = await compressImage(file, 1200, 600, 0.82);
+      setCoverImage(compressed);
+      try {
+        localStorage.setItem("kiloneed_cover_image", compressed);
+      } catch (err) {
+        console.warn("Could not save cover to localStorage:", err);
+      }
+      toast.success("Cover image updated!", { id: "cover-upload" });
+    } catch {
+      toast.error("Failed to upload cover image", { id: "cover-upload" });
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard?.writeText?.(`https://${user.profileLink}`);
+    toast.success("Profile link copied to clipboard!");
+  };
+
+  return (
+    <MobileLayout title="My Profile">
+      <div className="max-w-2xl sm:max-w-3xl mx-auto w-full pb-8">
+        {/* Hidden file input for avatar picker */}
+        <input
+          id="avatar-file-input"
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={handlePhotoUpload}
+        />
+
+        {/* Hidden file input for cover photo picker */}
+        <input
+          id="cover-file-input"
+          type="file"
+          ref={coverFileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={handleCoverUpload}
+        />
+
+        {/* ── Profile Header with Cover Image ── */}
+        <div className="relative">
+          {/* Cover image or gradient banner */}
+          <label
+            htmlFor="cover-file-input"
+            className="block h-32 sm:h-36 w-full relative overflow-hidden bg-gradient-to-r from-purple-900/60 via-blue-900/50 to-teal-900/40 cursor-pointer group"
+          >
+            {coverImage ? (
+              <img
+                src={coverImage}
+                alt="Profile Cover"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-25" />
+            )}
+
+            {/* Gradient shadow for text & button contrast */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50 pointer-events-none" />
+
+            {/* Cover photo action button without redundant X */}
+            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+              <label
+                htmlFor="cover-file-input"
+                onClick={(e) => e.stopPropagation()}
+                className="cursor-pointer px-2.5 py-1 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-[11px] font-medium flex items-center gap-1.5 shadow-md border border-white/20 transition-transform active:scale-95"
+                title="Upload cover image"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>{coverImage ? "Edit Cover" : "Add Cover"}</span>
+              </label>
+            </div>
+          </label>
+
+          {/* Profile Details Container */}
+          <div className="px-4 -mt-12">
+            <div className="flex items-end justify-between">
+              {/* Clickable Avatar with Camera Badge */}
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <Avatar className="h-20 w-20 rounded-2xl border-3 border-background shadow-xl ring-2 ring-primary/40 bg-card">
+                  {avatarImage ? (
+                    <AvatarImage src={avatarImage} alt={user.name} className="object-cover" />
+                  ) : null}
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white text-xl font-bold rounded-2xl">
+                    {user.name.split(" ").map((n) => n[0]).join("")}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Camera icon button */}
+                <div
+                  className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg ring-2 ring-background transition-transform active:scale-90"
+                  title="Upload profile picture"
+                >
+                  <Camera className="h-3.5 w-3.5" />
                 </div>
-                <div className="flex-1 text-center sm:text-left min-w-0">
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground truncate">{currentUser.name}</h2>
-                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start gap-1 mt-1">
-                    <MapPin className="h-3 w-3 shrink-0" />{currentUser.location}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start flex-wrap">
-                    <Badge className="bg-primary/20 text-primary border-primary/30">
-                      <Crown className="h-3 w-3 mr-1" />{currentUser.subscription}
-                    </Badge>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground">Expires {currentUser.subscriptionExpiry}</span>
-                  </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 mt-1 justify-center sm:justify-start">
-                    <ExternalLink className="h-3 w-3 shrink-0" /><span className="truncate">{currentUser.profileLink}</span>
-                  </p>
-                  {/* Stats */}
-                  <div className="flex gap-4 sm:gap-6 mt-3 sm:mt-4 justify-center sm:justify-start">
-                    {stats.map((s) => (
-                      <div key={s.label} className="text-center">
-                        <p className="text-base sm:text-lg font-bold text-foreground">{s.value}</p>
-                        <p className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1">
-                          <s.icon className="h-3 w-3" />{s.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              </div>
+
+              {/* Subscription Pill */}
+              <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs px-2.5 py-1 flex items-center gap-1 shadow-sm mb-1">
+                <Crown className="h-3 w-3" />
+                {user.subscription}
+              </Badge>
+            </div>
+
+            {/* Name & Headline */}
+            <div className="mt-2.5 space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-lg font-bold font-display text-foreground tracking-tight">{user.name}</h2>
+                <CheckCircle2 className="h-4 w-4 text-primary fill-primary/20 shrink-0" />
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">{user.headline}</p>
+            </div>
+
+            {/* Meta Row: Location & Profile link */}
+            <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-primary/70 shrink-0" />
+                {user.location}
+              </span>
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1 text-primary/90 hover:underline transition-colors"
+              >
+                <ExternalLink className="h-3 w-3 shrink-0" />
+                <span>{user.profileLink}</span>
+              </button>
+            </div>
+
+            {/* Clean Action Buttons: Edit Profile takes users directly to Settings */}
+            <div className="flex items-center gap-2 mt-2.5">
+              <button
+                onClick={() => navigate("/settings", { state: { editProfile: true } })}
+                className="flex-1 h-8 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold border border-border/70 flex items-center justify-center gap-1.5 transition active:scale-[0.98]"
+                title="Edit profile in settings"
+              >
+                <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Edit Profile</span>
+              </button>
+              <button
+                onClick={handleCopyLink}
+                className="h-8 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold border border-border/70 flex items-center justify-center gap-1.5 transition active:scale-[0.98]"
+                title="Share profile link"
+              >
+                <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Share</span>
+              </button>
+            </div>
+
+            {/* ── Compact Segmented Stats Card ── */}
+            <div className="grid grid-cols-3 gap-2 mt-2.5 p-2.5 bg-card/70 border border-border/60 rounded-xl backdrop-blur-sm">
+              <div className="text-center py-0.5">
+                <p className="text-base font-bold text-foreground leading-none">{user.recommendations}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                  <ThumbsUp className="h-2.5 w-2.5 text-primary" /> Recos
+                </p>
+              </div>
+              <div className="text-center py-0.5 border-x border-border/60">
+                <p className="text-base font-bold text-foreground leading-none">{user.mentions}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                  <AtSign className="h-2.5 w-2.5 text-blue-400" /> Mentions
+                </p>
+              </div>
+              <div className="text-center py-0.5">
+                <p className="text-base font-bold text-foreground leading-none">{user.connectionsCount}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                  <Users className="h-2.5 w-2.5 text-teal-400" /> Network
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Sleek Horizontal Scrollable & Swipeable Tabs ── */}
+        <div className="px-4 mt-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+            
+            {/* Horizontal pill navigation with full labels, touch-scroll & swipe support */}
+            <div className="relative -mx-4 px-4">
+              <div
+                ref={tabsListRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                className="overflow-x-auto touch-pan-x no-scrollbar flex items-center gap-1.5 pb-1 select-none cursor-grab active:cursor-grabbing scroll-smooth"
+              >
+                <TabsList className="inline-flex h-7 items-center gap-1 bg-transparent p-0 shrink-0">
+                  {tabItems.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <TabsTrigger
+                        key={tab.id}
+                        id={`profile-tab-${tab.id}`}
+                        value={tab.id}
+                        className="rounded-full text-[11px] px-2.5 py-1 h-7 font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-muted/60 text-muted-foreground border border-border/40 gap-1 transition-all shrink-0 cursor-pointer"
+                      >
+                        {Icon && <Icon className="h-3 w-3 shrink-0" />}
+                        <span>{tab.label}</span>
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
               </div>
             </div>
 
-            {/* ── Tabs ── */}
-            <div className="max-w-5xl mx-auto p-3 sm:p-4 md:p-6">
-              <Tabs defaultValue="needs" className="space-y-4">
-                <div className="overflow-x-auto -mx-3 px-3 sm:-mx-4 sm:px-4">
-                  <TabsList className="flex w-max gap-1 h-auto p-1">
-                    <TabsTrigger value="needs" className="text-xs px-2 sm:px-3"><Home className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Needs</span></TabsTrigger>
-                    <TabsTrigger value="commodities" className="text-xs px-2 sm:px-3"><ShoppingBag className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Commodities</span></TabsTrigger>
-                    <TabsTrigger value="connections" className="text-xs px-2 sm:px-3"><Users className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Connections</span></TabsTrigger>
-                    <TabsTrigger value="groups" className="text-xs px-2 sm:px-3"><UsersRound className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Groups</span></TabsTrigger>
-                    <TabsTrigger value="settings" className="text-xs px-2 sm:px-3"><Settings className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Settings</span></TabsTrigger>
-                    <TabsTrigger value="ads" className="text-xs px-2 sm:px-3"><Megaphone className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Ads</span></TabsTrigger>
-                    <TabsTrigger value="transactions" className="text-xs px-2 sm:px-3"><Receipt className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Transactions</span></TabsTrigger>
-                    <TabsTrigger value="addprofile" className="text-xs px-2 sm:px-3"><UserPlus className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Add Profile</span></TabsTrigger>
-                  </TabsList>
+            {/* Swipeable Tab Content Area */}
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.16 }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.16}
+              onDragEnd={(_e, { offset, velocity }) => {
+                const threshold = 40;
+                if (offset.x < -threshold || velocity.x < -300) {
+                  handleSwipe("left");
+                } else if (offset.x > threshold || velocity.x > 300) {
+                  handleSwipe("right");
+                }
+              }}
+              className="touch-pan-y"
+            >
+              {/* ─ Needs Tab ─ */}
+              <TabsContent value="needs" className="space-y-2.5 mt-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Requests</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs rounded-full gap-1 border-primary/40 text-primary"
+                    onClick={() => navigate("/feed")}
+                  >
+                    <Plus className="h-3 w-3" /> Post Need
+                  </Button>
                 </div>
-
-                {/* ─ Needs ─ */}
-                <TabsContent value="needs" className="space-y-3">
-                  {mockNeeds.map((n, i) => (
-                    <motion.div key={n.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                      <Card className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-3 sm:p-4">
-                          <p className="text-sm text-foreground">{n.text}</p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span>{n.date}</span>
-                            <span className="flex items-center gap-1"><ThumbsUp className="h-3 w-3" />{n.reactions}</span>
+                {userNeeds.length === 0 ? (
+                  <div className="text-center py-8 px-4 rounded-xl border border-dashed border-border/80 bg-card/40">
+                    <p className="text-xs text-muted-foreground">You haven't posted any needs yet.</p>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate("/feed")}
+                      className="mt-2.5 text-xs rounded-lg gradient-blue text-primary-foreground"
+                    >
+                      Post your first need
+                    </Button>
+                  </div>
+                ) : (
+                  userNeeds.map((n, i) => (
+                    <motion.div key={n.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                      <Card className="hover:border-primary/40 transition-colors bg-card/80 border-border/70">
+                        <CardContent className="p-3">
+                          <p className="text-xs sm:text-sm text-foreground font-medium leading-relaxed">{n.text}</p>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40 text-[11px] text-muted-foreground">
+                            <span>{n.postedAt || "Recently"}</span>
+                            <span className="flex items-center gap-1 font-semibold text-foreground">
+                              <ThumbsUp className="h-3 w-3 text-primary" /> {n.saves || 0}
+                            </span>
                           </div>
                         </CardContent>
                       </Card>
                     </motion.div>
-                  ))}
-                </TabsContent>
+                  ))
+                )}
+              </TabsContent>
 
-                {/* ─ Commodities ─ */}
-                <TabsContent value="commodities">
-                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3">
-                    {mockCommodities.map((c, i) => (
-                      <motion.div key={c.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                        <Card className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-3 sm:p-4">
-                            <div className="h-20 sm:h-28 bg-muted rounded-md mb-2 sm:mb-3 flex items-center justify-center">
-                              <ShoppingBag className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+              {/* ─ Commodities / Items Tab ─ */}
+              <TabsContent value="commodities" className="space-y-2.5 mt-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">My Inventory</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs rounded-full gap-1 border-primary/40 text-primary"
+                    onClick={() => navigate("/marketplace?action=sell", { state: { openSell: true } })}
+                  >
+                    <Plus className="h-3 w-3" /> Add Item
+                  </Button>
+                </div>
+                {userCommodities.length === 0 ? (
+                  <div className="text-center py-8 px-4 rounded-xl border border-dashed border-border/80 bg-card/40">
+                    <p className="text-xs text-muted-foreground">No marketplace items listed yet.</p>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate("/marketplace?action=sell", { state: { openSell: true } })}
+                      className="mt-2.5 text-xs rounded-lg gradient-blue text-primary-foreground"
+                    >
+                      List an item for sale
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-2.5 grid-cols-1 sm:grid-cols-2">
+                    {userCommodities.map((c, i) => (
+                      <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                        <Card className="hover:border-primary/40 transition-colors bg-card/80 border-border/70">
+                          <CardContent className="p-3 flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl shrink-0 overflow-hidden">
+                              {c.image ? <img src={c.image} alt={c.title} className="h-full w-full object-cover" /> : "📦"}
                             </div>
-                            <p className="font-medium text-foreground text-sm truncate">{c.name}</p>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-xs sm:text-sm text-primary font-semibold">{c.price}</p>
-                              <Badge variant="secondary" className="text-[9px] sm:text-[10px]">{c.stock} in stock</Badge>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground text-xs line-clamp-1">{c.title || c.name}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs font-bold text-primary">₦{Number(c.price || 0).toLocaleString()}</span>
+                                <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{c.condition || "Available"}</Badge>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                       </motion.div>
                     ))}
                   </div>
-                </TabsContent>
+                )}
+              </TabsContent>
 
-                {/* ─ Connections ─ */}
-                <TabsContent value="connections" className="space-y-3">
-                  {mockConnections.map((c) => (
-                    <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/profile/${c.id}`)}>
-                      <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
-                        <Avatar className="h-9 w-9 sm:h-10 sm:w-10"><AvatarFallback className="bg-primary/20 text-primary text-sm">{c.avatar}</AvatarFallback></Avatar>
-                        <div className="flex-1 min-w-0"><p className="font-medium text-foreground text-sm truncate">{c.name}</p><p className="text-xs text-muted-foreground">{c.mutual} mutual</p></div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/connections")}>View All Connections</Button>
-                </TabsContent>
-
-                {/* ─ Groups ─ */}
-                <TabsContent value="groups" className="space-y-3">
-                  {mockGroups.map((g) => (
-                    <Card key={g.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
-                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0"><UsersRound className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-sm truncate">{g.name}</p>
-                          <p className="text-xs text-muted-foreground">{g.members} members</p>
+              {/* ─ Connections Tab ─ */}
+              <TabsContent value="connections" className="space-y-2 mt-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mutual Contacts</span>
+                  <button
+                    onClick={() => navigate("/connections")}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
+                    View All
+                  </button>
+                </div>
+                {userConnections.length === 0 ? (
+                  <div className="text-center py-8 px-4 rounded-xl border border-dashed border-border/80 bg-card/40">
+                    <p className="text-xs text-muted-foreground">No peer connections yet.</p>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate("/connections")}
+                      className="mt-2.5 text-xs rounded-lg gradient-blue text-primary-foreground"
+                    >
+                      Find connections
+                    </Button>
+                  </div>
+                ) : (
+                  userConnections.map((c) => (
+                    <Card key={c.id} className="bg-card/80 border-border/70 hover:border-primary/30 transition-colors">
+                      <CardContent className="flex items-center justify-between p-3">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="h-9 w-9 rounded-full">
+                            <AvatarImage src={c.avatar} />
+                            <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+                              {c.name?.slice(0, 2).toUpperCase() || "US"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-foreground text-xs">{c.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{c.company || c.industry || "Merchant"}</p>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="text-[10px] shrink-0">{g.role}</Badge>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/groups")}>View All Groups</Button>
-                </TabsContent>
-
-                {/* ─ Settings ─ */}
-                <TabsContent value="settings">
-                  <Card>
-                    <CardContent className="p-6 flex flex-col items-center gap-4">
-                      <Settings className="h-12 w-12 text-muted-foreground" />
-                      <p className="text-muted-foreground text-sm">Manage your account settings</p>
-                      <Button onClick={() => navigate("/settings")}>Go to Settings</Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* ─ Ads ─ */}
-                <TabsContent value="ads" className="space-y-3">
-                  {mockAds.map((a) => (
-                    <Card key={a.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="flex items-center gap-3 p-3 sm:p-4">
-                        <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center shrink-0"><Megaphone className="h-4 w-4 text-primary" /></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-sm truncate">{a.title}</p>
-                          <p className="text-xs text-muted-foreground">{a.type} · {a.views.toLocaleString()} views</p>
-                        </div>
-                        <Badge variant={a.status === "Active" ? "default" : "secondary"} className="text-[10px] shrink-0">{a.status}</Badge>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/ads")}>Manage All Ads</Button>
-                </TabsContent>
-
-                {/* ─ Transactions ─ */}
-                <TabsContent value="transactions" className="space-y-3">
-                  {mockTransactions.map((t) => (
-                    <Card key={t.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="flex items-center gap-3 p-3 sm:p-4">
-                        <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center shrink-0"><Receipt className="h-4 w-4 text-primary" /></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-sm truncate">{t.description}</p>
-                          <p className="text-xs text-muted-foreground">{t.date}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-semibold text-foreground text-sm">{t.amount}</p>
-                          <Badge variant={t.status === "Completed" ? "default" : "secondary"} className="text-[10px]">{t.status}</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/transactions")}>View All Transactions</Button>
-                </TabsContent>
-
-                {/* ─ Add New Profile ─ */}
-                <TabsContent value="addprofile">
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader><CardTitle className="text-lg">Subscription Plans</CardTitle></CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">Each additional profile requires an active subscription.</p>
-                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-                          {subscriptionTiers.map((tier) => (
-                            <Card key={tier.name} className={`border-2 ${tier.name === currentUser.subscription ? "border-primary" : "border-border"}`}>
-                              <CardContent className="p-4 text-center">
-                                <p className="font-bold text-foreground">{tier.name}</p>
-                                <p className="text-lg font-semibold text-primary mt-1">{tier.price}</p>
-                                <ul className="text-xs text-muted-foreground mt-3 space-y-1">
-                                  {tier.features.map((f) => (
-                                    <li key={f} className="flex items-center gap-1 justify-center"><Star className="h-3 w-3 text-primary shrink-0" />{f}</li>
-                                  ))}
-                                </ul>
-                                {tier.name === currentUser.subscription && <Badge className="mt-3">Current Plan</Badge>}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader><CardTitle className="text-lg">Create New Profile</CardTitle></CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Profile Name</Label>
-                          <Input placeholder="e.g. My Fashion Store" value={newProfileName} onChange={(e) => setNewProfileName(e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Category</Label>
-                          <Select value={newProfileCategory} onValueChange={setNewProfileCategory}>
-                            <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="electronics">Electronics</SelectItem>
-                              <SelectItem value="fashion">Fashion</SelectItem>
-                              <SelectItem value="food">Food & Beverages</SelectItem>
-                              <SelectItem value="auto">Auto Parts</SelectItem>
-                              <SelectItem value="services">Services</SelectItem>
-                              <SelectItem value="construction">Construction</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button className="w-full gradient-blue text-primary-foreground" onClick={() => setAddProfileOpen(true)}>
-                          <UserPlus className="h-4 w-4 mr-2" /> Create Profile
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 rounded-full"
+                          onClick={() => navigate("/messages")}
+                          title="Message"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       </CardContent>
                     </Card>
+                  ))
+                )}
+              </TabsContent>
+
+              {/* ─ Groups Tab ─ */}
+              <TabsContent value="groups" className="space-y-2 mt-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined Communities</span>
+                  <button
+                    onClick={() => navigate("/groups")}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
+                    Explore
+                  </button>
+                </div>
+                {userGroups.length === 0 ? (
+                  <div className="text-center py-8 px-4 rounded-xl border border-dashed border-border/80 bg-card/40">
+                    <p className="text-xs text-muted-foreground">You haven't joined any trade groups yet.</p>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate("/groups")}
+                      className="mt-2.5 text-xs rounded-lg gradient-blue text-primary-foreground"
+                    >
+                      Explore trade groups
+                    </Button>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </main>
+                ) : (
+                  userGroups.map((g) => (
+                    <Card key={g.id} className="bg-card/80 border-border/70 hover:border-primary/30 transition-colors">
+                      <CardContent className="flex items-center justify-between p-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                            <UsersRound className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-xs truncate">{g.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{g.category || "General"} · {g.members_count || 1} members</p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] shrink-0 font-medium">Member</Badge>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+
+              {/* ─ Plans / Subscription Tab ─ */}
+              <TabsContent value="plans" className="space-y-3 mt-0">
+                <div className="p-3 bg-gradient-to-br from-primary/15 to-blue-500/10 border border-primary/25 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-primary" />
+                      <span className="font-bold text-xs text-foreground">Current: {user.subscription} Plan</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">Expires {user.subscriptionExpiry}</Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Enjoy priority matching, 3 active business profiles, and verified merchant perks.</p>
+                </div>
+
+                <div className="grid gap-2">
+                  {subscriptionTiers.map((tier) => (
+                    <Card key={tier.name} className={`bg-card/80 border ${tier.name === user.subscription ? "border-primary ring-1 ring-primary/30" : "border-border/70"}`}>
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-xs text-foreground">{tier.name}</p>
+                            {tier.name === user.subscription && (
+                              <Badge className="text-[9px] h-4 px-1.5 bg-primary text-primary-foreground">Active</Badge>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-primary font-semibold">{tier.price}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={tier.name === user.subscription ? "outline" : "default"}
+                          className="h-6.5 text-[11px] px-2.5 rounded-lg"
+                          onClick={() => navigate("/subscription")}
+                        >
+                          {tier.name === user.subscription ? "Current" : "Upgrade"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            </motion.div>
+          </Tabs>
         </div>
       </div>
-    </SidebarProvider>
+    </MobileLayout>
   );
 }

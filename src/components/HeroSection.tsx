@@ -58,10 +58,18 @@ const HeroSection = () => {
                 className="flex-1 bg-transparent px-2 sm:px-4 py-3 sm:py-3.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm md:text-base min-w-0"
               />
               <div className="flex items-center gap-1 sm:gap-1.5 pr-1 shrink-0">
-                <button onClick={() => { toast.info("Camera upload coming soon!"); }} className="p-2 sm:p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Image">
+                <button
+                  onClick={() => navigate("/feed", { state: { openCreate: true, mediaType: "image" } })}
+                  className="p-2 sm:p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  title="Post Need with Image"
+                >
                   <Camera className="h-4 w-4" />
                 </button>
-                <button onClick={() => { toast.info("Video upload coming soon!"); }} className="hidden sm:block p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Upload Video">
+                <button
+                  onClick={() => navigate("/feed", { state: { openCreate: true, mediaType: "video" } })}
+                  className="hidden sm:block p-2.5 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  title="Post Need with Video"
+                >
                   <Video className="h-4 w-4" />
                 </button>
                 <button onClick={() => { if (query.trim()) { toast.success(`Searching for "${query}" in ${activeFilter === 'all' ? 'all categories' : activeFilter}...`); navigate("/feed"); } else { toast.info("Type what you need first!"); } }} className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl gradient-blue text-primary-foreground font-semibold text-xs sm:text-sm shadow-glow hover:opacity-90 transition-opacity">
@@ -70,27 +78,30 @@ const HeroSection = () => {
               </div>
             </div>
 
-          <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-2">
-              <Filter className="h-3.5 w-3.5" />
+          <div className="flex items-center justify-start sm:justify-center gap-1.5 mt-3.5 overflow-x-auto scrollbar-hide py-1 px-1 -mx-2 sm:mx-auto max-w-xl">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground/80 shrink-0 pl-1 mr-0.5">
+              <Filter className="h-3 w-3" />
               <span>Filter:</span>
             </div>
             {filters.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`px-2.5 py-0.5 h-[26px] rounded-full text-[11px] font-medium transition-all shrink-0 border ${
                   activeFilter === f.id
-                    ? "gradient-blue text-primary-foreground shadow-glow"
-                    : "bg-secondary text-secondary-foreground hover:bg-muted"
+                    ? "gradient-blue text-primary-foreground border-transparent shadow-sm shadow-primary/20"
+                    : "bg-secondary/70 text-muted-foreground border-border/50 hover:text-foreground hover:bg-secondary hover:border-border/80"
                 }`}
               >
                 {f.label}
               </button>
             ))}
-            <button onClick={() => toast.info("Location filter coming soon!")} className="flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-muted transition-colors">
-              <MapPin className="h-3 w-3" />
-              Location
+            <button
+              onClick={() => navigate("/feed", { state: { openFilters: true } })}
+              className="flex items-center gap-1 px-2.5 py-0.5 h-[26px] rounded-full text-[11px] font-medium bg-secondary/70 text-muted-foreground border border-border/50 hover:text-foreground hover:bg-secondary hover:border-border/80 transition-colors shrink-0"
+            >
+              <MapPin className="h-2.5 w-2.5" />
+              <span>Location</span>
             </button>
           </div>
         </motion.div>

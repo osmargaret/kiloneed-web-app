@@ -16,7 +16,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const handleSignIn = () => {
-    toast.info("Sign in coming soon!");
+    navigate("/signin");
   };
 
   return (

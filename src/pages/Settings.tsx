@@ -1,459 +1,859 @@
-import { useState } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useTheme } from "next-themes";
+import { authService } from "@/services/authService";
+import { MobileLayout } from "@/components/MobileLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle, DialogTrigger
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
-import {
-  User, Lock, MapPin, Tag, CreditCard, Eye, Link2,
-  Trash2, AlertTriangle, Shield, Bell, UserPlus, Plus, X
+  User,
+  Lock,
+  MapPin,
+  Moon,
+  Sun,
+  Bell,
+  Eye,
+  Shield,
+  HelpCircle,
+  FileText,
+  LogOut,
+  Trash2,
+  ChevronRight,
+  Sparkles,
+  Smartphone,
+  Mail,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Briefcase,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-/* ─── 30-day approval notice ─── */
-const ApprovalBadge = () => (
-  <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400 ml-2">
-    * 30-day approval
-  </Badge>
-);
+export default function Settings() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
-/* ─── Profile Settings ─── */
-function ProfileSection() {
-  const [profileName, setProfileName] = useState("John Doe");
-  const [location, setLocation] = useState("Lagos, Nigeria");
-  const [customLink, setCustomLink] = useState("johndoe");
-  const [categories, setCategories] = useState(["Electronics", "Services"]);
-  const [addCatValue, setAddCatValue] = useState("");
-
-  // Payment cards
-  const [cards, setCards] = useState([
-    { id: 1, type: "VISA", last4: "4242", expiry: "12/26", isDefault: true },
-  ]);
-  const [showAddCard, setShowAddCard] = useState(false);
-  const [newCardNumber, setNewCardNumber] = useState("");
-  const [newCardExpiry, setNewCardExpiry] = useState("");
-  const [newCardCvv, setNewCardCvv] = useState("");
-  const [newCardName, setNewCardName] = useState("");
-
-  const removeCategory = (cat: string) => {
-    setCategories(prev => prev.filter(c => c !== cat));
-    toast.success(`Removed "${cat}" category`);
-  };
-
-  const addCategory = (val: string) => {
-    if (val && !categories.includes(val)) {
-      setCategories(prev => [...prev, val]);
-      toast.success(`Added "${val}" category. Change requires 30-day approval.`);
-    }
-    setAddCatValue("");
-  };
-
-  const handleAddCard = () => {
-    if (!newCardNumber || !newCardExpiry || !newCardCvv || !newCardName) {
-      toast.error("Please fill in all card fields");
-      return;
-    }
-    const last4 = newCardNumber.replace(/\s/g, "").slice(-4);
-    const type = newCardNumber.startsWith("5") ? "MC" : newCardNumber.startsWith("4") ? "VISA" : "CARD";
-    setCards(prev => [...prev, { id: Date.now(), type, last4, expiry: newCardExpiry, isDefault: false }]);
-    setNewCardNumber("");
-    setNewCardExpiry("");
-    setNewCardCvv("");
-    setNewCardName("");
-    setShowAddCard(false);
-    toast.success("Card added successfully");
-  };
-
-  const setDefaultCard = (id: number) => {
-    setCards(prev => prev.map(c => ({ ...c, isDefault: c.id === id })));
-    toast.success("Default card updated");
-  };
-
-  const removeCard = (id: number) => {
-    setCards(prev => prev.filter(c => c.id !== id));
-    toast.success("Card removed");
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Change Profile Name */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Profile Name</CardTitle>
-            <ApprovalBadge />
-          </div>
-          <CardDescription className="text-xs">Changes require 30 days from last update to take effect.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Enter profile name" />
-          <Button size="sm" className="gradient-blue text-primary-foreground" onClick={() => toast.success("Name change submitted. Pending 30-day approval.")}>Save Name</Button>
-        </CardContent>
-      </Card>
-
-      {/* Change Password */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Password</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input type="password" placeholder="Current password" />
-          <Input type="password" placeholder="New password" />
-          <Input type="password" placeholder="Confirm new password" />
-          <Button size="sm" className="gradient-blue text-primary-foreground" onClick={() => toast.success("Password updated successfully")}>Update Password</Button>
-        </CardContent>
-      </Card>
-
-      {/* Change Location */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Location</CardTitle>
-            <ApprovalBadge />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Enter location" />
-          <Button size="sm" className="gradient-blue text-primary-foreground" onClick={() => toast.success("Location change submitted. Pending 30-day approval.")}>Update Location</Button>
-        </CardContent>
-      </Card>
-
-      {/* Change Categories */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Categories</CardTitle>
-            <ApprovalBadge />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <Badge key={cat} variant="secondary" className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => removeCategory(cat)}>
-                {cat} ×
-              </Badge>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Select value={addCatValue} onValueChange={setAddCatValue}>
-              <SelectTrigger className="flex-1"><SelectValue placeholder="Add category" /></SelectTrigger>
-              <SelectContent>
-                {["Electronics", "Services", "Automotive", "Real Estate", "Fashion", "Food", "Health"]
-                  .filter(c => !categories.includes(c))
-                  .map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" onClick={() => addCategory(addCatValue)} disabled={!addCatValue}><Plus className="h-4 w-4" /></Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Billing Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Payment Method</CardTitle>
-          </div>
-          <CardDescription className="text-xs">Manage cards on your account for billing.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {cards.map(card => (
-            <div key={card.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
-              <div className="flex items-center gap-3">
-                <div className={`h-8 w-12 rounded flex items-center justify-center ${card.type === "VISA" ? "bg-gradient-to-r from-blue-600 to-blue-400" : card.type === "MC" ? "bg-gradient-to-r from-red-500 to-orange-400" : "bg-gradient-to-r from-gray-500 to-gray-400"}`}>
-                  <span className="text-[10px] font-bold text-white">{card.type}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">•••• •••• •••• {card.last4}</p>
-                  <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {card.isDefault ? (
-                  <Badge variant="outline" className="text-[10px]">Default</Badge>
-                ) : (
-                  <>
-                    <Button size="sm" variant="ghost" className="text-[10px] h-6 px-2" onClick={() => setDefaultCard(card.id)}>Set Default</Button>
-                    <Button size="sm" variant="ghost" className="text-[10px] h-6 px-1 text-destructive" onClick={() => removeCard(card.id)}>
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {/* Add New Card Dialog */}
-          <Dialog open={showAddCard} onOpenChange={setShowAddCard}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline" className="w-full">
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add New Card
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[calc(100vw-2rem)] max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-sm flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /> Add Payment Card</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 pt-2">
-                <div>
-                  <Label className="text-xs">Cardholder Name</Label>
-                  <Input value={newCardName} onChange={e => setNewCardName(e.target.value)} placeholder="John Doe" className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Card Number</Label>
-                  <Input value={newCardNumber} onChange={e => setNewCardNumber(e.target.value)} placeholder="4242 4242 4242 4242" className="mt-1" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Expiry</Label>
-                    <Input value={newCardExpiry} onChange={e => setNewCardExpiry(e.target.value)} placeholder="MM/YY" className="mt-1" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">CVV</Label>
-                    <Input value={newCardCvv} onChange={e => setNewCardCvv(e.target.value)} placeholder="123" type="password" className="mt-1" />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="pt-2">
-                <Button variant="outline" onClick={() => setShowAddCard(false)}>Cancel</Button>
-                <Button className="gradient-blue text-primary-foreground" onClick={handleAddCard}>Add Card</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
-
-      {/* Customize Profile Link */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Link2 className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Profile Link</CardTitle>
-            <ApprovalBadge />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">kiloneed.com/</span>
-            <Input value={customLink} onChange={(e) => setCustomLink(e.target.value)} className="flex-1" placeholder="your-link" />
-          </div>
-          <Button size="sm" className="gradient-blue text-primary-foreground" onClick={() => toast.success(`Profile link saved: kiloneed.com/${customLink}. Pending 30-day approval.`)}>Save Link</Button>
-        </CardContent>
-      </Card>
-    </div>
+  // User details state (loaded from auth or local session)
+  const [userName, setUserName] = useState(
+    () => localStorage.getItem("kiloneed_user_name") || "Merchant"
   );
-}
+  const [userHeadline, setUserHeadline] = useState(
+    () => localStorage.getItem("kiloneed_headline") || "Merchant"
+  );
+  const [userEmail, setUserEmail] = useState(
+    () => localStorage.getItem("kiloneed_user_email") || ""
+  );
+  const [userPhone, setUserPhone] = useState(
+    () => localStorage.getItem("kiloneed_user_phone") || ""
+  );
+  const [userLocation, setUserLocation] = useState(
+    () => localStorage.getItem("kiloneed_location") || "Lagos, Nigeria"
+  );
+  const [userHandle, setUserHandle] = useState(
+    () =>
+      localStorage.getItem("kiloneed_handle") ||
+      (localStorage.getItem("kiloneed_user_name") || "merchant")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+  );
 
-/* ─── Privacy Settings ─── */
-function PrivacySection() {
-  const [privacySettings, setPrivacySettings] = useState({
-    needs: true,
-    commodities: true,
-    connections: false,
-    groups: true,
-  });
+  // Notification toggles
+  const [notifPush, setNotifPush] = useState(true);
+  const [notifNeeds, setNotifNeeds] = useState(true);
+  const [notifMessages, setNotifMessages] = useState(true);
+  const [notifMarketing, setNotifMarketing] = useState(false);
+
+  // Privacy toggles
+  const [isProfilePublic, setIsProfilePublic] = useState(true);
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [autoAcceptConnections, setAutoAcceptConnections] = useState(false);
 
+  // Dialog states
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState<"terms" | "privacy" | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Edit profile form temp states
+  const [tempName, setTempName] = useState(userName);
+  const [tempHeadline, setTempHeadline] = useState(userHeadline);
+  const [tempEmail, setTempEmail] = useState(userEmail);
+  const [tempPhone, setTempPhone] = useState(userPhone);
+  const [tempLocation, setTempLocation] = useState(userLocation);
+  const [tempHandle, setTempHandle] = useState(userHandle);
+
+  // Sync with live authenticated profile from backend
+  useEffect(() => {
+    authService
+      .getMe()
+      .then((res) => {
+        const u = res?.user;
+        if (u) {
+          if (u.name) {
+            setUserName(u.name);
+            setTempName(u.name);
+            localStorage.setItem("kiloneed_user_name", u.name);
+          }
+          if (u.email) {
+            setUserEmail(u.email);
+            setTempEmail(u.email);
+            localStorage.setItem("kiloneed_user_email", u.email);
+          }
+          if (u.phone) {
+            setUserPhone(u.phone);
+            setTempPhone(u.phone);
+            localStorage.setItem("kiloneed_user_phone", u.phone);
+          }
+          if (u.location) {
+            setUserLocation(u.location);
+            setTempLocation(u.location);
+            localStorage.setItem("kiloneed_location", u.location);
+          }
+          const headline = u.bio || u.company || u.industry || "Merchant";
+          setUserHeadline(headline);
+          setTempHeadline(headline);
+          localStorage.setItem("kiloneed_headline", headline);
+
+          const handle =
+            (u as any).handle ||
+            (u.name ? u.name.toLowerCase().replace(/[^a-z0-9]/g, "") : "merchant");
+          setUserHandle(handle);
+          setTempHandle(handle);
+          localStorage.setItem("kiloneed_handle", handle);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Automatically open edit profile dialog when navigated from Profile.tsx
+  useEffect(() => {
+    if ((location.state as any)?.editProfile) {
+      setTempName(userName);
+      setTempHeadline(userHeadline);
+      setTempEmail(userEmail);
+      setTempPhone(userPhone);
+      setTempLocation(userLocation);
+      setTempHandle(userHandle);
+      setEditProfileOpen(true);
+    }
+  }, [location.state, userName, userHeadline, userEmail, userPhone, userLocation, userHandle]);
+
+  // Password fields
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Delete account confirmation
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const handleSaveProfile = async () => {
+    if (!tempName.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    setIsSavingProfile(true);
+    const cleanHandle = tempHandle.toLowerCase().replace(/[^a-z0-9_]/g, "");
+
+    setUserName(tempName);
+    setUserHeadline(tempHeadline);
+    setUserEmail(tempEmail);
+    setUserPhone(tempPhone);
+    setUserLocation(tempLocation);
+    setUserHandle(cleanHandle);
+
+    localStorage.setItem("kiloneed_user_name", tempName);
+    localStorage.setItem("kiloneed_headline", tempHeadline);
+    localStorage.setItem("kiloneed_user_email", tempEmail);
+    localStorage.setItem("kiloneed_user_phone", tempPhone);
+    localStorage.setItem("kiloneed_location", tempLocation);
+    localStorage.setItem("kiloneed_handle", cleanHandle);
+
+    try {
+      await authService.updateProfile({
+        name: tempName,
+        phone: tempPhone,
+        location: tempLocation,
+        bio: tempHeadline,
+      });
+      toast.success("Profile updated & synced with backend!");
+      setEditProfileOpen(false);
+    } catch {
+      toast.success("Profile saved locally!");
+      setEditProfileOpen(false);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleUpdatePassword = () => {
+    if (!currentPassword) {
+      toast.error("Please enter your current password");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setChangePasswordOpen(false);
+    toast.success("Password changed successfully!");
+  };
+
+  const handleSignOut = () => {
+    authService.logout().catch(() => {});
+    toast.success("Signed out successfully!");
+    window.location.href = "/";
+  };
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmation !== "DELETE") {
+      toast.error("Please type DELETE to confirm");
+      return;
+    }
+    setDeleteAccountOpen(false);
+    toast.success("Account deletion requested. Logging out...");
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1200);
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Eye className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Profile Visibility</CardTitle>
+    <MobileLayout title="Settings" showBack>
+      <div className="max-w-xl mx-auto px-4 py-5 space-y-6 pb-24">
+        
+        {/* User Profile Summary Card */}
+        <div className="bg-gradient-to-br from-card to-muted/40 rounded-2xl p-4 border border-border shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <Avatar className="h-14 w-14 ring-2 ring-primary/20 shrink-0">
+              <AvatarImage src="" alt={userName} />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold text-lg">
+                {initials || "JD"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h2 className="text-base font-bold text-foreground truncate">{userName}</h2>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                  Verified
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground truncate">@{userHandle} • {userLocation}</p>
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">{userEmail}</p>
+            </div>
           </div>
-          <CardDescription className="text-xs">Choose what is public when people view your profile.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(privacySettings).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <Label className="text-sm capitalize">{key}</Label>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xl text-xs font-medium shrink-0 h-8 px-3 border-border"
+            onClick={() => {
+              setTempName(userName);
+              setTempEmail(userEmail);
+              setTempPhone(userPhone);
+              setTempLocation(userLocation);
+              setTempHandle(userHandle);
+              setEditProfileOpen(true);
+            }}
+          >
+            Edit
+          </Button>
+        </div>
+
+        {/* Section 1: Account & Security */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Account & Security
+          </h3>
+          <div className="bg-card rounded-2xl border border-border divide-y divide-border/60 overflow-hidden shadow-xs">
+            
+            {/* Personal Details */}
+            <button
+              onClick={() => {
+                setTempName(userName);
+                setTempEmail(userEmail);
+                setTempPhone(userPhone);
+                setTempLocation(userLocation);
+                setTempHandle(userHandle);
+                setEditProfileOpen(true);
+              }}
+              className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Personal Details</p>
+                  <p className="text-xs text-muted-foreground">Name, email, phone & location</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+            {/* Password & Security */}
+            <button
+              onClick={() => setChangePasswordOpen(true)}
+              className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Password & Security</p>
+                  <p className="text-xs text-muted-foreground">Change password and protect account</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+            {/* View Full Public Profile */}
+            <button
+              onClick={() => navigate("/profile")}
+              className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">View My Public Profile</p>
+                  <p className="text-xs text-muted-foreground">See how your store looks to buyers</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+          </div>
+        </div>
+
+        {/* Section 2: Preferences */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Preferences & Appearance
+          </h3>
+          <div className="bg-card rounded-2xl border border-border divide-y divide-border/60 overflow-hidden shadow-xs">
+            
+            {/* Theme Toggle */}
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Dark Theme</p>
+                  <p className="text-xs text-muted-foreground">Switch between light and dark display</p>
+                </div>
+              </div>
               <Switch
-                checked={value}
+                checked={theme === "dark"}
+                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 3: Notifications */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Notifications
+          </h3>
+          <div className="bg-card rounded-2xl border border-border divide-y divide-border/60 overflow-hidden shadow-xs">
+            
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Push Notifications</p>
+                  <p className="text-xs text-muted-foreground">Receive real-time alerts on your device</p>
+                </div>
+              </div>
+              <Switch
+                checked={notifPush}
                 onCheckedChange={(v) => {
-                  setPrivacySettings((p) => ({ ...p, [key]: v }));
-                  toast.success(`${key} visibility ${v ? "enabled" : "disabled"}`);
+                  setNotifPush(v);
+                  toast.success(v ? "Push notifications enabled" : "Push notifications paused");
                 }}
               />
             </div>
-          ))}
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Connection Requests</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Auto-accept connection requests</p>
-              <p className="text-xs text-muted-foreground">New requests will be accepted automatically.</p>
-            </div>
-            <Switch checked={autoAcceptConnections} onCheckedChange={(v) => { setAutoAcceptConnections(v); toast.success(v ? "Auto-accept enabled" : "Auto-accept disabled"); }} />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-/* ─── Notification Settings ─── */
-function NotificationSection() {
-  const [notifNeeds, setNotifNeeds] = useState(true);
-  const [notifFollowers, setNotifFollowers] = useState(true);
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Notifications</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Needs in my category</p>
-              <p className="text-xs text-muted-foreground">Receive notifications for new needs matching your business category.</p>
-            </div>
-            <Switch checked={notifNeeds} onCheckedChange={(v) => { setNotifNeeds(v); toast.success(v ? "Need notifications enabled" : "Need notifications disabled"); }} />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Notify followers</p>
-              <p className="text-xs text-muted-foreground">Send notifications of new commodities, offers, discounts, or price changes to your followers.</p>
-            </div>
-            <Switch checked={notifFollowers} onCheckedChange={(v) => { setNotifFollowers(v); toast.success(v ? "Follower notifications enabled" : "Follower notifications disabled"); }} />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-/* ─── Danger Zone ─── */
-function DangerSection() {
-  const [deleteInput, setDeleteInput] = useState("");
-
-  return (
-    <Card className="border-destructive/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Trash2 className="h-4 w-4 text-destructive" />
-          <CardTitle className="text-sm text-destructive">Danger Zone</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-xs text-muted-foreground mb-3">Permanently delete your profile and all associated data. This cannot be undone.</p>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="destructive" size="sm">Delete Profile</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" /> Delete Profile
-              </DialogTitle>
-              <DialogDescription>
-                This action is irreversible. All your needs, commodities, connections, and data will be permanently removed.
-              </DialogDescription>
-            </DialogHeader>
-            <Input placeholder="Type DELETE to confirm" value={deleteInput} onChange={e => setDeleteInput(e.target.value)} />
-            <DialogFooter>
-              <Button
-                variant="destructive"
-                disabled={deleteInput !== "DELETE"}
-                onClick={() => {
-                  toast.success("Profile deletion requested. You will be logged out shortly.");
-                  setDeleteInput("");
-                }}
-              >
-                I understand, delete my profile
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ─── Settings Page ─── */
-const Settings = () => {
-  return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-40 h-14 flex items-center gap-3 border-b border-border bg-background/80 backdrop-blur-xl px-4">
-            <SidebarTrigger />
-            <span className="font-display text-lg font-bold text-gradient-blue">KILONEED</span>
-          </header>
-
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-4 py-6">
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold font-display text-foreground">Settings</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage your profile, privacy, and preferences.
-                  <span className="text-amber-600 dark:text-amber-400 ml-1">* Changes marked with * require 30-day approval.</span>
-                </p>
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Needs & Lead Alerts</p>
+                  <p className="text-xs text-muted-foreground">Notify when buyers request items matching your category</p>
+                </div>
               </div>
-
-              <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/50 h-auto">
-                  <TabsTrigger value="profile" className="text-xs flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5" /> Profile
-                  </TabsTrigger>
-                  <TabsTrigger value="privacy" className="text-xs flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5" /> Privacy
-                  </TabsTrigger>
-                  <TabsTrigger value="notifications" className="text-xs flex items-center gap-1.5">
-                    <Bell className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Notifications</span><span className="sm:hidden">Notifs</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="danger" className="text-xs flex items-center gap-1.5">
-                    <Trash2 className="h-3.5 w-3.5" /> Account
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="profile"><ProfileSection /></TabsContent>
-                <TabsContent value="privacy"><PrivacySection /></TabsContent>
-                <TabsContent value="notifications"><NotificationSection /></TabsContent>
-                <TabsContent value="danger"><DangerSection /></TabsContent>
-              </Tabs>
+              <Switch
+                checked={notifNeeds}
+                onCheckedChange={(v) => {
+                  setNotifNeeds(v);
+                  toast.success(v ? "Lead alerts enabled" : "Lead alerts disabled");
+                }}
+              />
             </div>
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
-  );
-};
 
-export default Settings;
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Chat & Inquiry Alerts</p>
+                  <p className="text-xs text-muted-foreground">Direct messages, quotes, and offer updates</p>
+                </div>
+              </div>
+              <Switch
+                checked={notifMessages}
+                onCheckedChange={(v) => {
+                  setNotifMessages(v);
+                  toast.success(v ? "Message alerts enabled" : "Message alerts disabled");
+                }}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 4: Privacy & Connections */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Privacy & Discovery
+          </h3>
+          <div className="bg-card rounded-2xl border border-border divide-y divide-border/60 overflow-hidden shadow-xs">
+            
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <Eye className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Public Marketplace Profile</p>
+                  <p className="text-xs text-muted-foreground">Allow buyers and peers to discover your business</p>
+                </div>
+              </div>
+              <Switch
+                checked={isProfilePublic}
+                onCheckedChange={(v) => {
+                  setIsProfilePublic(v);
+                  toast.success(v ? "Profile is now public" : "Profile is now private");
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Active Status</p>
+                  <p className="text-xs text-muted-foreground">Show when you are currently online</p>
+                </div>
+              </div>
+              <Switch
+                checked={showOnlineStatus}
+                onCheckedChange={(v) => {
+                  setShowOnlineStatus(v);
+                  toast.success(v ? "Online status visible" : "Online status hidden");
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3.5">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Auto-Accept Connection Requests</p>
+                  <p className="text-xs text-muted-foreground">Automatically link with verified peers</p>
+                </div>
+              </div>
+              <Switch
+                checked={autoAcceptConnections}
+                onCheckedChange={(v) => {
+                  setAutoAcceptConnections(v);
+                  toast.success(v ? "Auto-accept enabled" : "Auto-accept disabled");
+                }}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 5: Support & About */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Support & Legal
+          </h3>
+          <div className="bg-card rounded-2xl border border-border divide-y divide-border/60 overflow-hidden shadow-xs">
+            
+            <button
+              onClick={() => toast.info("Contact our support team at support@kiloneed.com")}
+              className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <HelpCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Help Center & Support</p>
+                  <p className="text-xs text-muted-foreground">FAQ, dispute resolution & assistance</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+            <button
+              onClick={() => setLegalModalOpen("terms")}
+              className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Terms of Service</p>
+                  <p className="text-xs text-muted-foreground">Platform policies and user agreement</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+            <button
+              onClick={() => setLegalModalOpen("privacy")}
+              className="w-full flex items-center justify-between p-3.5 hover:bg-muted/40 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Privacy Policy</p>
+                  <p className="text-xs text-muted-foreground">How we safeguard your business data</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+            <div className="p-3.5 flex items-center justify-between bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Kiloneed Mobile</p>
+                  <p className="text-xs text-muted-foreground">Version 2.4.0 (Build 2026.11)</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                Up to date
+              </Badge>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 6: Account Actions */}
+        <div className="space-y-3 pt-2">
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="w-full h-11 rounded-2xl border-border font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted text-foreground"
+          >
+            <LogOut className="w-4 h-4 text-muted-foreground" />
+            Sign Out
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDeleteConfirmation("");
+              setDeleteAccountOpen(true);
+            }}
+            className="w-full h-10 rounded-2xl font-medium text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete Account
+          </Button>
+        </div>
+
+      </div>
+
+      {/* ─── Edit Personal Details Dialog ─── */}
+      <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+        <DialogContent className="max-w-md w-[calc(100vw-1.5rem)] max-h-[85dvh] rounded-2xl flex flex-col p-4 sm:p-5 overflow-hidden">
+          <DialogHeader className="shrink-0 pb-1">
+            <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+              <User className="h-4 w-4 text-primary" />
+              Edit Personal Information
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground">
+              Update your public merchant details and contact info.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2.5 py-2 overflow-y-auto flex-1 pr-1 overscroll-contain">
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Full Name</Label>
+              <Input
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                placeholder="Your full name"
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Headline / Bio</Label>
+              <Input
+                value={tempHeadline}
+                onChange={(e) => setTempHeadline(e.target.value)}
+                placeholder="e.g. Electronics & Tech Merchant"
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Username / Handle</Label>
+              <div className="flex items-center mt-1">
+                <span className="text-xs text-muted-foreground px-2 h-8 flex items-center bg-muted rounded-l-lg border border-r-0 border-input">@</span>
+                <Input
+                  value={tempHandle}
+                  onChange={(e) => setTempHandle(e.target.value)}
+                  placeholder="username"
+                  className="rounded-l-none h-8 text-xs rounded-r-lg px-2.5 bg-background border-border"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Email Address</Label>
+              <Input
+                type="email"
+                value={tempEmail}
+                onChange={(e) => setTempEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Phone Number</Label>
+              <Input
+                type="tel"
+                value={tempPhone}
+                onChange={(e) => setTempPhone(e.target.value)}
+                placeholder="+234 ..."
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">City / State</Label>
+              <div className="flex items-center gap-1.5 mt-1">
+                <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <Input
+                  value={tempLocation}
+                  onChange={(e) => setTempLocation(e.target.value)}
+                  placeholder="e.g. Ikeja, Lagos"
+                  className="h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="shrink-0 pt-3 border-t border-border flex flex-row items-center justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditProfileOpen(false)} className="flex-1 sm:flex-none h-8 text-xs rounded-lg">
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={isSavingProfile}
+              className="flex-1 sm:flex-none gradient-blue text-primary-foreground font-semibold h-8 text-xs rounded-lg gap-1"
+              onClick={handleSaveProfile}
+            >
+              {isSavingProfile ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>Save Changes</span>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Change Password Dialog ─── */}
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent className="max-w-md w-[calc(100vw-1.5rem)] max-h-[85dvh] rounded-2xl flex flex-col p-4 sm:p-5 overflow-hidden">
+          <DialogHeader className="shrink-0 pb-1">
+            <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+              <Lock className="h-4 w-4 text-primary" />
+              Change Password
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground">
+              Choose a strong password to keep your account safe.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2.5 py-2 overflow-y-auto flex-1 pr-1 overscroll-contain">
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Current Password</Label>
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">New Password</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+
+            <div>
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Confirm New Password</Label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-type new password"
+                className="mt-1 h-8 text-xs rounded-lg px-2.5 bg-background border-border"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="shrink-0 pt-3 border-t border-border flex flex-row items-center justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setChangePasswordOpen(false)} className="flex-1 sm:flex-none h-8 text-xs rounded-lg">
+              Cancel
+            </Button>
+            <Button size="sm" className="flex-1 sm:flex-none gradient-blue text-primary-foreground font-semibold h-8 text-xs rounded-lg" onClick={handleUpdatePassword}>
+              Update Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete Account Confirmation Dialog ─── */}
+      <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+        <DialogContent className="max-w-md w-[calc(100vw-2rem)] rounded-2xl border-destructive/30">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Account Permanently
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              This action cannot be undone. All your needs, active listings, peer connections, and message history will be removed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Please type <span className="font-bold text-destructive">DELETE</span> below to confirm.
+            </p>
+            <Input
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder="Type DELETE"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button variant="outline" onClick={() => setDeleteAccountOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirmation !== "DELETE"}
+              onClick={handleDeleteAccount}
+            >
+              Delete My Account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Legal & Policies Modal ─── */}
+      <Dialog open={legalModalOpen !== null} onOpenChange={(open) => !open && setLegalModalOpen(null)}>
+        <DialogContent className="max-w-md w-[calc(100vw-2rem)] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {legalModalOpen === "terms" ? "Terms of Service" : "Privacy Policy"}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Kiloneed legal policies and guidelines
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs text-muted-foreground space-y-2.5 max-h-60 overflow-y-auto pr-1">
+            <p>
+              Welcome to Kiloneed. By using our platform, you agree to comply with our community and trade standards.
+            </p>
+            <p>
+              <strong>1. Account Responsibilities:</strong> You are responsible for safeguarding your login credentials and ensuring all posted listings and buyer needs represent genuine intent.
+            </p>
+            <p>
+              <strong>2. Fair Marketplace Trade:</strong> False advertising, prohibited items, or deceptive pricing will result in immediate suspension.
+            </p>
+            <p>
+              <strong>3. Privacy:</strong> We only collect necessary communication and transaction indicators to provide you with seamless local and national commerce.
+            </p>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button onClick={() => setLegalModalOpen(null)} className="w-full">
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </MobileLayout>
+  );
+}
