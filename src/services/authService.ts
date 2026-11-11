@@ -41,6 +41,7 @@ export const authService = {
     );
     if (res.token) {
       setAuthToken(res.token);
+      localStorage.setItem("kiloneed_user_id", String(res.user.id));
       localStorage.setItem("kiloneed_user_name", res.user.name);
       localStorage.setItem("kiloneed_user_email", res.user.email);
       if (res.user.country) localStorage.setItem("kiloneed_country", res.user.country);
@@ -59,6 +60,7 @@ export const authService = {
     );
     if (res.token) {
       setAuthToken(res.token);
+      localStorage.setItem("kiloneed_user_id", String(res.user.id));
       localStorage.setItem("kiloneed_user_name", res.user.name);
       localStorage.setItem("kiloneed_user_email", res.user.email);
       if (res.user.country) localStorage.setItem("kiloneed_country", res.user.country);
@@ -71,7 +73,13 @@ export const authService = {
   },
 
   async getMe() {
-    return api.get<{ user: UserProfile }>("/auth/me");
+    const res = await api.get<{ user: UserProfile }>("/auth/me");
+    if (res?.user?.id) {
+      localStorage.setItem("kiloneed_user_id", String(res.user.id));
+      if (res.user.name) localStorage.setItem("kiloneed_user_name", res.user.name);
+      if (res.user.email) localStorage.setItem("kiloneed_user_email", res.user.email);
+    }
+    return res;
   },
 
   async updateProfile(profileData: Partial<UserProfile>) {

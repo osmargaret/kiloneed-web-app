@@ -22,7 +22,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getAuthToken, clearAuthToken } from "@/services/apiClient";
+import { getAuthToken, clearAuthToken, notificationsApiService } from "@/services/apiClient";
 
 interface NavItem {
   label: string;
@@ -56,6 +56,7 @@ export function DesktopSidebar() {
   const [userEmail, setUserEmail] = useState<string>("");
   const [userAvatar, setUserAvatar] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -64,6 +65,21 @@ export function DesktopSidebar() {
       setUserName(localStorage.getItem("kiloneed_user_name") || "User");
       setUserEmail(localStorage.getItem("kiloneed_user_email") || "");
       setUserAvatar(localStorage.getItem("kiloneed_avatar") || "");
+
+      // Poll unread notifications count
+      const fetchNotifs = () => {
+        notificationsApiService
+          .getNotifications()
+          .then((res: any[]) => {
+            if (Array.isArray(res)) {
+              setUnreadNotifications(res.length);
+            }
+          })
+          .catch(() => {});
+      };
+      fetchNotifs();
+      const iv = setInterval(fetchNotifs, 8000);
+      return () => clearInterval(iv);
     }
   }, [location.pathname]);
 
@@ -184,9 +200,13 @@ export function DesktopSidebar() {
                     />
                     <span>{item.label}</span>
                   </div>
-                  {active && (
+                  {item.path === "/notifications" && unreadNotifications > 0 ? (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-primary text-primary-foreground leading-none animate-pulse">
+                      {unreadNotifications}
+                    </span>
+                  ) : active ? (
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  )}
+                  ) : null}
                 </button>
               );
             })}

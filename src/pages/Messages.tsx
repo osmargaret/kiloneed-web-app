@@ -190,27 +190,47 @@ const Messages = () => {
     };
   }, []);
 
-  // Poll active conversation every 2.5s for real-time incoming messages
+  // Poll active conversation every 2s for real-time incoming messages
   useEffect(() => {
     if (!selectedThread || view !== "conversation") return;
 
     let isSubscribed = true;
 
     const fetchCurrentConversation = () => {
-      messagesApiService
-        .getConversation(selectedThread.id)
+      const numThreadId = Number(selectedThread.id);
+      const guestId = selectedGuest?.id || selectedThread.guests[0]?.id || selectedThread.id;
+
+      const promise =
+        !isNaN(numThreadId) && numThreadId > 0
+          ? messagesApiService.getConversation(numThreadId)
+          : guestId && !isNaN(Number(guestId)) && Number(guestId) > 0
+          ? messagesApiService.startConversation(Number(guestId)).then((r: any) => {
+              if (r?.conversationId) {
+                setSelectedThread((prev) => (prev ? { ...prev, id: String(r.conversationId) } : prev));
+                return messagesApiService.getConversation(r.conversationId);
+              }
+              return null;
+            })
+          : Promise.resolve(null);
+
+      promise
         .then((res: any) => {
-          if (!isSubscribed) return;
+          if (!isSubscribed || !res) return;
           if (Array.isArray(res?.messages)) {
+            const currentUserId = localStorage.getItem("kiloneed_user_id");
             const msgs: MessageItem[] = res.messages.map((m: any) => ({
               id: String(m.id),
-              sender: m.isMine ? "You" : (m.sender?.name || res.otherUser?.name || "User"),
+              sender:
+                (currentUserId && String(m.sender_id) === String(currentUserId)) || m.isMine
+                  ? "You"
+                  : m.sender?.name || res.otherUser?.name || "User",
               text: m.text || "",
-              time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now",
-              isMine: !!m.isMine,
+              time: m.created_at
+                ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "Just now",
+              isMine: (currentUserId && String(m.sender_id) === String(currentUserId)) || Boolean(m.isMine),
               mediaUrl: m.media_url,
             }));
-            const guestId = selectedGuest?.id || selectedThread.guests[0]?.id || selectedThread.id;
             setConversations((prev) => {
               const prevMsgs = prev[guestId] || [];
               if (
@@ -228,12 +248,12 @@ const Messages = () => {
     };
 
     fetchCurrentConversation();
-    const pollInterval = setInterval(fetchCurrentConversation, 2500);
+    const pollInterval = setInterval(fetchCurrentConversation, 2000);
     return () => {
       isSubscribed = false;
       clearInterval(pollInterval);
     };
-  }, [selectedThread, selectedGuest, view]);
+  }, [selectedThread?.id, selectedGuest?.id, view]);
 
   // Pusher Echo Real-Time WebSocket Listener
   useEffect(() => {
@@ -247,34 +267,70 @@ const Messages = () => {
       const data = e.message;
       if (!data) return;
 
-      const guestId = selectedGuest?.id || selectedThread?.guests[0]?.id || selectedThread?.id;
-      if (!guestId) return;
+      const isMyMessage = currentUserId && String(data.sender_id) === String(currentUserId);
+      const activeThreadId = selectedThread?.id ? String(selectedThread.id) : null;
+      const activeGuestId = selectedGuest?.id ? String(selectedGuest.id) : null;
 
-      // Ensure message belongs to current thread if thread ID specified
-      if (data.conversation_id && selectedThread?.id && String(data.conversation_id) !== String(selectedThread.id)) {
-        return;
+      // Check if message belongs to the currently active conversation
+      const isForActiveChat =
+        (activeThreadId && String(data.conversation_id) === activeThreadId) ||
+        (activeGuestId && (String(data.sender_id) === activeGuestId || String(data.receiver_id) === activeGuestId));
+
+      if (isForActiveChat && activeGuestId) {
+        const newMsg: MessageItem = {
+          id: String(data.id || Date.now()),
+          sender: isMyMessage ? "You" : data.sender || "User",
+          text: data.text || "",
+          time: data.time || "Just now",
+          isMine: Boolean(isMyMessage),
+          mediaUrl: data.media_url,
+        };
+
+        setConversations((prev) => {
+          const list = prev[activeGuestId] || [];
+          if (list.some((m) => m.id === newMsg.id || (m.text === newMsg.text && m.isMine === newMsg.isMine))) {
+            return prev;
+          }
+          return { ...prev, [activeGuestId]: [...list, newMsg] };
+        });
       }
 
-      const newMsg: MessageItem = {
-        id: String(data.id || Date.now()),
-        sender: String(data.sender_id) === String(currentUserId) ? "You" : (data.sender || "User"),
-        text: data.text || "",
-        time: data.time || "Just now",
-        isMine: String(data.sender_id) === String(currentUserId),
-        mediaUrl: data.media_url,
-      };
+      // If message is incoming from another user, show live notification toast
+      if (!isMyMessage) {
+        toast.info(`New message from ${data.sender || "User"}`, {
+          description: data.text ? (data.text.length > 60 ? data.text.slice(0, 60) + "..." : data.text) : "Sent an attachment",
+        });
 
-      setConversations((prev) => {
-        const list = prev[guestId] || [];
-        if (list.some((m) => m.id === newMsg.id)) return prev;
-        return { ...prev, [guestId]: [...list, newMsg] };
-      });
+        // Background reload conversation threads to update last messages
+        messagesApiService.getConversations().then((remoteConvs) => {
+          if (Array.isArray(remoteConvs)) {
+            const mapped: MessageThread[] = remoteConvs.map((rc: any) => ({
+              id: String(rc.id),
+              title: rc.title || "Chat",
+              type: "commodity",
+              status: "active",
+              unread: rc.unread ? 1 : 0,
+              guests: [
+                {
+                  id: String(rc.otherUser?.id || rc.id),
+                  name: rc.otherUser?.name || rc.title || "User",
+                  avatar: rc.avatar || "",
+                  lastMessage: rc.lastMessage || "No messages yet",
+                  time: rc.lastMessageTime || "Recently",
+                  unread: rc.unread ? 1 : 0,
+                },
+              ],
+            }));
+            setCommodityThreads(mapped);
+          }
+        }).catch(() => {});
+      }
     });
 
     return () => {
       channel.stopListening(".message.sent");
     };
-  }, [selectedGuest, selectedThread]);
+  }, [selectedGuest?.id, selectedThread?.id]);
 
   // Auto-scroll to bottom of conversation
   useEffect(() => {

@@ -4,6 +4,7 @@ import { ArrowLeft, Bell } from "lucide-react";
 import { MobileDrawerMenu } from "./MobileDrawerMenu";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
+import { notificationsApiService, getAuthToken } from "@/services/apiClient";
 
 interface MobileLayoutProps {
   title: string;
@@ -39,6 +40,23 @@ export function MobileLayout({
   const shouldShowBack = showBack !== undefined ? showBack : !isMainTab;
   // Keep bottom nav on all pages unless explicitly hidden (e.g. full-screen chat)
   const shouldShowBottomNav = !hideBottomNav;
+
+  const [unreadNotifs, setUnreadNotifs] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!getAuthToken()) return;
+    const fetchCount = () => {
+      notificationsApiService
+        .getNotifications()
+        .then((res: any[]) => {
+          if (Array.isArray(res)) setUnreadNotifs(res.length);
+        })
+        .catch(() => {});
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 8000);
+    return () => clearInterval(interval);
+  }, [location.pathname]);
 
   // Gesture touch tracking for mobile
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -136,7 +154,11 @@ export function MobileLayout({
               title="Notifications"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+              {unreadNotifs > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center ring-2 ring-background animate-pulse">
+                  {unreadNotifs}
+                </span>
+              )}
             </button>
           </div>
         </header>
@@ -172,7 +194,11 @@ export function MobileLayout({
               title="Notifications"
             >
               <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
+              {unreadNotifs > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center animate-pulse">
+                  {unreadNotifs}
+                </span>
+              )}
             </button>
           </div>
         </header>
