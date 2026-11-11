@@ -18,6 +18,7 @@ import {
   Sparkles,
   Tag,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -38,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { NeedMedia, PrivacyOption } from "@/types/need";
 import { USER_INDUSTRY } from "@/services/needsStore";
+import { api } from "@/services/apiClient";
 
 interface PostData {
   text: string;
@@ -104,6 +106,7 @@ export const CreatePost = ({ onPost }: CreatePostProps) => {
   // Media alt editor modal
   const [editingAltIndex, setEditingAltIndex] = useState<number | null>(null);
   const [altTextDraft, setAltTextDraft] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -119,7 +122,7 @@ export const CreatePost = ({ onPost }: CreatePostProps) => {
         url: URL.createObjectURL(file),
         name: file.name,
         size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        alt: isImage ? `${file.name.replace(/\.[^/.]+$/, "")} alt description` : undefined,
+        alt: undefined,
         file,
       };
     });
@@ -171,42 +174,76 @@ export const CreatePost = ({ onPost }: CreatePostProps) => {
       .slice(0, 2)
       .toUpperCase() || "JD";
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!text.trim() && mediaFiles.length === 0) {
       toast.error("Please enter a description or attach media to post your need.");
       return;
     }
 
-    const userCountry = localStorage.getItem("kiloneed_country") || "";
-    const userState = localStorage.getItem("kiloneed_state") || "";
-    const userCity = localStorage.getItem("kiloneed_city") || "";
-    const userLocation = [userCity, userState, userCountry].filter(Boolean).join(", ");
+    try {
+      setIsPosting(true);
+      const userCountry = localStorage.getItem("kiloneed_country") || "";
+      const userState = localStorage.getItem("kiloneed_state") || "";
+      const userCity = localStorage.getItem("kiloneed_city") || "";
+      const userLocation = [userCity, userState, userCountry].filter(Boolean).join(", ");
 
-    onPost({
-      text: text.trim(),
-      media: mediaFiles.map(({ type, url, name, size, alt }) => ({
-        type,
-        url,
-        name,
-        size,
-        alt,
-      })),
-      categories: selectedCats.length > 0 ? selectedCats : [USER_INDUSTRY],
-      privacy,
-      expiresInHours: selectedExpiryHours,
-      country: userCountry,
-      state: userState,
-      city: userCity,
-      location: userLocation,
-    } as any);
+      // Upload any local files to Cloudinary
+      const uploadedMedia: NeedMedia[] = [];
+      for (const item of mediaFiles) {
+        if (item.file) {
+          try {
+            const res = await api.upload(item.file);
+            uploadedMedia.push({
+              type: item.type,
+              url: res.url,
+              name: item.name,
+              size: res.size || item.size,
+              alt: item.alt,
+            });
+          } catch {
+            uploadedMedia.push({
+              type: item.type,
+              url: item.url,
+              name: item.name,
+              size: item.size,
+              alt: item.alt,
+            });
+          }
+        } else {
+          uploadedMedia.push({
+            type: item.type,
+            url: item.url,
+            name: item.name,
+            size: item.size,
+            alt: item.alt,
+          });
+        }
+      }
 
-    toast.success("Your need was published! Added to bottom of feed.");
-    setText("");
-    setMediaFiles([]);
-    setSelectedCats([USER_INDUSTRY]);
-    setPrivacy("public");
-    setSelectedExpiryHours(24); // Reset to default 24 hours
-    setExpanded(false);
+      onPost({
+        text: text.trim(),
+        media: uploadedMedia,
+        categories: selectedCats.length > 0 ? selectedCats : [USER_INDUSTRY],
+        privacy,
+        expiresInHours: selectedExpiryHours,
+        country: userCountry,
+        state: userState,
+        city: userCity,
+        location: userLocation,
+      } as any);
+
+      toast.success("Your need was published! Added to bottom of feed.");
+      setText("");
+      setMediaFiles([]);
+      setSelectedCats([USER_INDUSTRY]);
+      setPrivacy("public");
+      setSelectedExpiryHours(24);
+      setExpanded(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to publish need");
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
@@ -264,59 +301,56 @@ export const CreatePost = ({ onPost }: CreatePostProps) => {
             >
               {/* Media Previews (Images, Videos, Documents) */}
               {mediaFiles.length > 0 && (
-                <div className="px-2.5 pb-2 sm:px-3 space-y-1.5">
-                  <div className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
-                    <Paperclip className="h-3 w-3" />
-                    Attached Media & Docs ({mediaFiles.length})
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="px-3 pb-3 pt-1 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-3">
                     {mediaFiles.map((media, i) => (
-                      <div
-                        key={i}
-                        className="relative group rounded-lg overflow-hidden border border-border bg-muted/40 p-1 flex items-center gap-1.5 max-w-xs"
-                      >
+                      <div key={i} className="relative group">
                         {media.type === "image" ? (
-                          <div className="relative">
+                          <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border border-border/80 bg-muted shadow-sm group-hover:border-primary/50 transition-all">
                             <img
                               src={media.url}
-                              alt={media.alt || ""}
-                              className="h-12 w-12 rounded-md object-cover"
+                              alt={media.alt || "Uploaded image"}
+                              className="h-full w-full object-cover"
                             />
+                            {/* Discreet ALT button overlay */}
                             <button
                               type="button"
                               onClick={() => openAltEditor(i)}
-                              title="Set Image Alt Text for Search"
-                              className="absolute bottom-0.5 left-0.5 bg-black/80 text-white text-[8px] px-1 rounded hover:bg-primary transition-colors"
+                              title={media.alt ? `Alt: ${media.alt}` : "Add image description for search"}
+                              className="absolute bottom-1.5 left-1.5 bg-black/75 hover:bg-primary text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-md backdrop-blur-xs transition-colors cursor-pointer"
                             >
-                              Alt
+                              {media.alt ? "ALT ✓" : "+ ALT"}
                             </button>
                           </div>
                         ) : media.type === "video" ? (
-                          <div className="h-12 w-12 rounded-md bg-black flex items-center justify-center text-white shrink-0">
-                            <Video className="h-5 w-5 text-primary" />
+                          <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border border-border/80 bg-black flex flex-col items-center justify-center text-white shadow-sm">
+                            <Video className="h-6 w-6 text-primary mb-1" />
+                            <span className="text-[10px] text-white/80 font-medium px-1 truncate max-w-full">
+                              {media.size || "Video"}
+                            </span>
                           </div>
                         ) : (
-                          <div className="h-12 w-12 rounded-md bg-primary/10 flex flex-col items-center justify-center text-primary shrink-0 p-1">
-                            <FileText className="h-4 w-4" />
-                            <span className="text-[7px] font-bold uppercase mt-0.5">DOC</span>
+                          <div className="relative h-20 w-24 sm:h-24 sm:w-28 rounded-2xl border border-border/80 bg-card p-2 flex flex-col justify-between shadow-sm">
+                            <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 pr-2">
+                              <p className="text-[10px] font-semibold text-foreground truncate">
+                                {media.name}
+                              </p>
+                              <p className="text-[8px] text-muted-foreground">{media.size}</p>
+                            </div>
                           </div>
                         )}
 
-                        <div className="flex-1 min-w-0 pr-5">
-                          <p className="text-[10px] font-semibold text-foreground truncate">
-                            {media.name || (media.type === "image" ? "Image attachment" : "Video")}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground">{media.size || "1 MB"}</p>
-                          {media.alt && (
-                            <p className="text-[9px] text-primary truncate">Alt: {media.alt}</p>
-                          )}
-                        </div>
-
+                        {/* Floating Dismiss (X) Button */}
                         <button
+                          type="button"
                           onClick={() => removeMedia(i)}
-                          className="absolute top-1 right-1 p-0.5 rounded-full bg-background/90 text-foreground hover:bg-destructive hover:text-white transition-colors"
+                          title="Remove attachment"
+                          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-slate-900/90 hover:bg-destructive text-white border border-white/20 flex items-center justify-center transition-transform hover:scale-110 shadow-md cursor-pointer z-10"
                         >
-                          <X className="h-2.5 w-2.5" />
+                          <X className="h-3 w-3" />
                         </button>
                       </div>
                     ))}
@@ -449,11 +483,15 @@ export const CreatePost = ({ onPost }: CreatePostProps) => {
                 {/* 6. Post Button */}
                 <Button
                   onClick={handlePost}
-                  disabled={!text.trim() && mediaFiles.length === 0}
+                  disabled={(!text.trim() && mediaFiles.length === 0) || isPosting}
                   className="gradient-blue text-primary-foreground font-semibold text-xs h-7.5 px-3 rounded-lg shadow-glow gap-1"
                 >
-                  <Send className="h-2.5 w-2.5" />
-                  Post Need
+                  {isPosting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Send className="h-2.5 w-2.5" />
+                  )}
+                  <span>{isPosting ? "Posting..." : "Post Need"}</span>
                 </Button>
               </div>
 
