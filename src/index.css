@@ -530,6 +530,20 @@ a:not([class*="h-"]):not([class*="size-"]),
   user-select: none;
 }
 
+@media (min-width: 768px) {
+  body:has(.auth-screen) {
+    background-color: #04060d;
+  }
+  .auth-screen {
+    max-width: 520px;
+    margin: 48px auto;
+    min-height: calc(100vh - 96px);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(59, 130, 246, 0.15);
+  }
+}
+
 /* Glowing background orb */
 .auth-glow-orb {
   position: absolute;
