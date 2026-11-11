@@ -14,7 +14,7 @@ export function MobileBottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="mobile-bottom-nav">
+    <nav className="mobile-bottom-nav md:hidden">
       {navItems.map((item) => {
         const active = location.pathname === item.path;
         return (

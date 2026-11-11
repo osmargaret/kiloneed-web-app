@@ -172,8 +172,8 @@
   overflow-y: hidden;
 }
 
-/* Tablet & iPad screens (e.g. 640px to 1024px) */
-@media (min-width: 640px) {
+/* Tablet & iPad screens (e.g. 640px) */
+@media (min-width: 640px) and (max-width: 767px) {
   .mobile-root {
     max-width: 640px;
     box-shadow: 0 0 50px -10px rgba(0, 0, 0, 0.35);
@@ -182,23 +182,12 @@
   }
 }
 
-/* Tabs & Larger Tablets (e.g. Samsung Galaxy Tab, iPad Air/Pro >= 768px) */
+/* Desktop & Laptop Screens (>= 768px): Expand to full width, no phone constraints */
 @media (min-width: 768px) {
   .mobile-root {
-    max-width: 768px;
-  }
-}
-
-/* Laptops and Large Screen Devices (>= 1024px) */
-@media (min-width: 1024px) {
-  .mobile-root {
-    max-width: 860px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .mobile-root {
-    max-width: 920px;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -355,27 +344,16 @@
   z-index: 50;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 640px) and (max-width: 767px) {
   .mobile-bottom-nav {
     max-width: 640px;
   }
 }
 
+/* Strictly hide bottom navigation on desktop screens (>= 768px) */
 @media (min-width: 768px) {
   .mobile-bottom-nav {
-    max-width: 768px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .mobile-bottom-nav {
-    max-width: 860px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .mobile-bottom-nav {
-    max-width: 920px;
+    display: none !important;
   }
 }
 
