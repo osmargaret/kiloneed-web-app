@@ -101,50 +101,43 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#04060d] text-white flex flex-col lg:flex-row relative overflow-x-hidden selection:bg-primary selection:text-white">
-      {/* ─────────────────────────────────────────────────────────────
-          1. LEFT SHOWCASE PANEL (Desktop only, 55% width)
-          ───────────────────────────────────────────────────────────── */}
+      {/* 1. Left Clean Brand Showcase (Desktop only) */}
       <AuthShowcasePanel mode="signin" />
 
-      {/* ─────────────────────────────────────────────────────────────
-          2. RIGHT AUTH FORM PANE (Desktop 45% / Mobile 100%)
-          ───────────────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-1/2 xl:w-5/12 flex flex-col justify-center items-center px-4 sm:px-8 py-8 sm:py-12 relative z-10 overflow-y-auto">
-        {/* Ambient glow behind right form */}
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none -z-0" />
-
-        <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-xl shadow-2xl relative z-10">
-          {/* Header */}
+      {/* 2. Right Form Container */}
+      <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-8 py-10 lg:py-16 relative z-10 overflow-y-auto">
+        <div className="w-full max-w-[400px] p-7 sm:p-9 rounded-3xl bg-slate-900/40 border border-white/[0.08] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          {/* Form Header */}
           <div className="text-center sm:text-left mb-6">
             <button
-              className="inline-flex items-center gap-2 mb-3 cursor-pointer group"
+              className="lg:hidden inline-flex items-center gap-2 mb-3 cursor-pointer group"
               onClick={() => navigate("/")}
             >
               <img
                 src="./logo.png"
                 alt="Logo"
-                className="w-7 h-7 object-contain rounded-lg border border-white/20 group-hover:scale-105 transition-transform"
+                className="w-7 h-7 object-contain rounded-lg border border-white/20"
               />
               <span className="font-display font-black text-lg tracking-wider text-white">
                 KILONEED
               </span>
             </button>
             <h2 className="text-2xl sm:text-3xl font-black font-display text-white tracking-tight">
-              {forgotMode ? "Reset Password via OTP" : "Welcome Back"}
+              {forgotMode ? "Reset Password" : "Welcome Back"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
               {forgotMode
-                ? "We'll send a 6-digit verification code to your email"
-                : "Sign in to continue to your local needs and marketplace"}
+                ? "Enter your email to receive a 6-digit code"
+                : "Sign in to access your needs and marketplace"}
             </p>
           </div>
 
           {!forgotMode ? (
             <>
-              {/* Google button */}
+              {/* Google Button */}
               <button
                 type="button"
-                className="w-full h-12 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full h-11 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                 onClick={handleGoogleSignIn}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18">
@@ -156,15 +149,15 @@ const SignIn = () => {
                 Continue with Google
               </button>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 my-5">
+              {/* Minimal Divider */}
+              <div className="flex items-center gap-3 my-4">
                 <span className="flex-1 h-px bg-white/10" />
-                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">or with email</span>
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">or</span>
                 <span className="flex-1 h-px bg-white/10" />
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-3.5">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="relative flex items-center">
                   <Mail className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
                   <input
@@ -173,7 +166,7 @@ const SignIn = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-800/70 border border-white/10 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-800/60 border border-white/10 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     autoComplete="email"
                   />
                 </div>
@@ -186,7 +179,7 @@ const SignIn = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-11 pl-10 pr-10 rounded-xl bg-slate-800/70 border border-white/10 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    className="w-full h-11 pl-10 pr-10 rounded-xl bg-slate-800/60 border border-white/10 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     autoComplete="current-password"
                   />
                   <button
@@ -214,7 +207,7 @@ const SignIn = () => {
 
                 <button
                   type="submit"
-                  className="w-full h-12 rounded-xl gradient-blue text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer mt-2"
+                  className="w-full h-11 rounded-xl gradient-blue text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer mt-1"
                   disabled={loading}
                 >
                   {loading ? (
@@ -238,26 +231,26 @@ const SignIn = () => {
                   placeholder="Enter your registered email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-800/70 border border-white/10 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-800/60 border border-white/10 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full h-12 rounded-xl gradient-blue text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                className="w-full h-11 rounded-xl gradient-blue text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 disabled={loading}
               >
                 {loading ? (
                   <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  "Send 6-Digit Verification Code"
+                  "Send Verification Code"
                 )}
               </button>
 
               <button
                 type="button"
                 onClick={() => setForgotMode(false)}
-                className="text-xs text-slate-400 hover:text-white block text-center w-full pt-2"
+                className="text-xs text-slate-400 hover:text-white block text-center w-full pt-2 cursor-pointer"
               >
                 ← Back to Sign In
               </button>
@@ -266,7 +259,7 @@ const SignIn = () => {
             <form onSubmit={handleResetPasswordWithOtp} className="space-y-4">
               {otpPreview && (
                 <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-xs text-center text-blue-200">
-                  Verification Code Preview: <strong className="font-mono text-sm text-white">{otpPreview}</strong>
+                  Verification Code: <strong className="font-mono text-sm text-white">{otpPreview}</strong>
                 </div>
               )}
 
@@ -279,7 +272,7 @@ const SignIn = () => {
                   placeholder="6-Digit OTP Code"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-800/70 border border-white/10 text-white text-xs sm:text-sm tracking-widest font-mono text-center focus:outline-none focus:border-blue-500"
+                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-800/60 border border-white/10 text-white text-xs sm:text-sm tracking-widest font-mono text-center focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -291,7 +284,7 @@ const SignIn = () => {
                   placeholder="New Password (min 8 characters)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full h-11 pl-10 pr-10 rounded-xl bg-slate-800/70 border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full h-11 pl-10 pr-10 rounded-xl bg-slate-800/60 border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:border-blue-500"
                 />
                 <button
                   type="button"
@@ -304,7 +297,7 @@ const SignIn = () => {
 
               <button
                 type="submit"
-                className="w-full h-12 rounded-xl gradient-blue text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                className="w-full h-11 rounded-xl gradient-blue text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 disabled={loading}
               >
                 {loading ? (
@@ -320,7 +313,7 @@ const SignIn = () => {
                   setForgotMode(false);
                   setOtpSent(false);
                 }}
-                className="text-xs text-slate-400 hover:text-white block text-center w-full pt-2"
+                className="text-xs text-slate-400 hover:text-white block text-center w-full pt-2 cursor-pointer"
               >
                 ← Back to Sign In
               </button>
@@ -328,7 +321,7 @@ const SignIn = () => {
           )}
 
           {/* Footer link */}
-          <p className="text-center text-xs text-slate-400 mt-6 pt-4 border-t border-white/10">
+          <p className="text-center text-xs text-slate-400 mt-5 pt-4 border-t border-white/10">
             Don't have an account?{" "}
             <button
               onClick={() => navigate("/signup")}
