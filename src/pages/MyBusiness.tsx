@@ -9,8 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Store, Mail, Phone, MapPin, Globe, FileText, Package, Wrench,
-  Pencil, ArrowLeft, Tag, Clock, Star,
+  Pencil, ArrowLeft, Tag, Clock, Star, Loader2,
 } from "lucide-react";
+import { authService, UserProfile } from "@/services/authService";
+import { productsApiService } from "@/services/apiClient";
 
 interface BusinessProfile {
   id: string;
@@ -40,14 +42,18 @@ interface Listing {
   businessId?: string;
 }
 
-const formatPrice = (n: number) => "₦" + n.toLocaleString("en-NG");
+const formatPrice = (n: number) => "₦" + Number(n).toLocaleString("en-NG");
 
 export default function MyBusiness() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    // 1. Try local cache first
     try {
       const raw = localStorage.getItem("kiloneed_business");
       if (raw) setProfile(JSON.parse(raw));
@@ -56,9 +62,56 @@ export default function MyBusiness() {
       const raw = localStorage.getItem("kiloneed_listings");
       if (raw) setListings(JSON.parse(raw));
     } catch {}
+
+    // 2. Fetch live data from backend API
+    Promise.all([
+      authService.getMe().catch(() => null),
+      productsApiService.getProducts().catch(() => []),
+    ]).then(([meRes, allProducts]) => {
+      if (!mounted) return;
+      if (meRes?.user) {
+        const u = meRes.user;
+        setProfile((prev) => prev || {
+          id: String(u.id),
+          fullName: u.name,
+          businessName: u.company || u.name,
+          email: u.email,
+          phone: u.phone,
+          category: u.industry || "General",
+          address: u.location || [u.city, u.state, u.country].filter(Boolean).join(", "),
+          description: u.bio || `Official store of ${u.name}`,
+          logo: u.avatar,
+        });
+
+        if (Array.isArray(allProducts)) {
+          const userItems: Listing[] = allProducts
+            .filter((p: any) => p.user_id === u.id || p.seller === u.name)
+            .map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              price: Number(p.price) || 0,
+              image: p.image || "/placeholder.svg",
+              category: p.category || "General",
+              location: p.city ? `${p.city}, ${p.state}` : (p.location || "Online"),
+              rating: p.rating || 5.0,
+              reviews: p.reviews || 0,
+              type: p.listing_type === "For Rent" || p.category === "Services" ? "service" : "product",
+              businessId: String(u.id),
+            }));
+          if (userItems.length > 0) {
+            setListings(userItems);
+          }
+        }
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const myListings = profile ? listings.filter((l) => l.businessId === profile.id) : [];
+  const myListings = profile ? listings.filter((l) => !l.businessId || l.businessId === profile.id) : listings;
   const products = myListings.filter((l) => (l.type ?? "product") === "product");
   const services = myListings.filter((l) => l.type === "service");
 
@@ -76,7 +129,12 @@ export default function MyBusiness() {
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            {!profile ? (
+            {loading && !profile ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span>Loading business profile...</span>
+              </div>
+            ) : !profile ? (
               <div className="max-w-2xl mx-auto p-6 text-center mt-12">
                 <Store className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
                 <h2 className="text-xl font-semibold text-foreground">No business profile yet</h2>
@@ -106,11 +164,11 @@ export default function MyBusiness() {
                               <Badge className="bg-primary/20 text-primary border-primary/30">
                                 <Tag className="h-3 w-3 mr-1" />{profile.category}
                               </Badge>
-                              <span className="text-[11px] text-muted-foreground font-mono">{profile.id}</span>
+                              <span className="text-[11px] text-muted-foreground font-mono">ID: {profile.id}</span>
                             </div>
                           </div>
                           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/marketplace")}>
-                            <Pencil className="h-3.5 w-3.5" /> Edit
+                            <Pencil className="h-3.5 w-3.5" /> Manage Listings
                           </Button>
                         </div>
                         {profile.description && (
