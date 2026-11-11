@@ -57,9 +57,6 @@ const Landing = () => {
             <span className="font-display font-black text-xl tracking-wider text-white">
               KILONEED
             </span>
-            <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] font-bold px-1.5 py-0.5 hidden sm:inline-flex">
-              WEB
-            </Badge>
           </div>
         </div>
 

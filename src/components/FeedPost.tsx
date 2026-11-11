@@ -361,7 +361,7 @@ export const FeedPost = ({ post, onUpdate, onBlock }: FeedPostProps) => {
           {/* 1. Comments / Responses button */}
           <button
             onClick={() => setShowComments(!showComments)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors cursor-pointer ${
               showComments ? "text-primary font-semibold" : ""
             }`}
             title="View responses & comment in real time"
@@ -373,7 +373,7 @@ export const FeedPost = ({ post, onUpdate, onBlock }: FeedPostProps) => {
           {/* 2. Mention button */}
           <button
             onClick={() => setMentionOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             title="Mention peers in real time"
           >
             <AtSign className="h-4 w-4 shrink-0" />
@@ -383,7 +383,7 @@ export const FeedPost = ({ post, onUpdate, onBlock }: FeedPostProps) => {
           {/* 3. Repost button */}
           <button
             onClick={handleRepost}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors cursor-pointer ${
               reactions.reposted ? "text-primary font-semibold" : ""
             }`}
             title="Repost need to timeline in real time"
@@ -395,7 +395,7 @@ export const FeedPost = ({ post, onUpdate, onBlock }: FeedPostProps) => {
           {/* 4. Bookmark button */}
           <button
             onClick={handleToggleBookmark}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
               reactions.saved
                 ? "bg-muted text-primary font-semibold border border-primary/20 shadow-xs"
                 : "hover:text-foreground hover:bg-muted"
@@ -409,7 +409,7 @@ export const FeedPost = ({ post, onUpdate, onBlock }: FeedPostProps) => {
           {/* 5. Share button */}
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             title="Share need"
           >
             <Share2 className="h-4 w-4 shrink-0" />

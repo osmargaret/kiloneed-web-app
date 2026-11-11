@@ -57,7 +57,7 @@ export const needsStore = {
 
   async syncWithBackend(): Promise<Need[]> {
     try {
-      const res = await needsApiService.getFeed({ pageSize: 100, sort: "oldest" });
+      const res = await needsApiService.getFeed({ pageSize: 100, sort: "newest" });
       if (res && Array.isArray(res.needs)) {
         const clean = res.needs.filter(
           (n: Need) => !MOCK_AUTHORS.includes(n.author) && !MOCK_AUTHORS.includes((n as any).user?.name || "")
@@ -192,7 +192,8 @@ export const needsStore = {
       return true;
     });
 
-    filtered.sort((a, b) => a.createdAt - b.createdAt);
+    // Newest to Oldest ("newest up")
+    filtered.sort((a, b) => b.createdAt - a.createdAt);
 
     const pageSize = options?.pageSize || 4;
     const page = options?.page || 1;

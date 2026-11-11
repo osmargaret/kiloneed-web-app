@@ -131,11 +131,11 @@ export const Feed = () => {
 
   const handleNewPost = (postData: any) => {
     needsStore.addNeed(postData);
-    loadNeeds(page, false);
-    toast.success("Need posted! Newest needs appear at the bottom of the feed.");
+    loadNeeds(1, false);
+    toast.success("Need posted! Your need is now live at the top of the feed.");
     setTimeout(() => {
-      feedBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 150);
   };
 
   const resetFilters = () => {
@@ -236,14 +236,14 @@ export const Feed = () => {
               )}
             </div>
 
-            {/* Jump to newest button */}
+            {/* Jump to latest (top) button */}
             <button
-              onClick={scrollToBottom}
-              className="text-primary hover:underline font-semibold flex items-center gap-1 shrink-0 text-[11px] ml-auto"
-              title="Jump down to newest needs"
+              onClick={scrollToTop}
+              className="text-primary hover:underline font-semibold flex items-center gap-1 shrink-0 text-[11px] ml-auto cursor-pointer"
+              title="Jump to latest needs at the top"
             >
-              <ArrowDown className="h-3 w-3" />
-              <span className="whitespace-nowrap">Jump to newest</span>
+              <ArrowUp className="h-3 w-3" />
+              <span className="whitespace-nowrap">Latest needs</span>
             </button>
           </div>
 
@@ -385,7 +385,7 @@ export const Feed = () => {
         {/* ─── Sorting & Count Header ─── */}
         <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
           <span className="font-medium text-foreground/80">
-            Feed · Oldest to Newest
+            Feed · Newest to Oldest
           </span>
           <span>{totalCount} needs near you</span>
         </div>
