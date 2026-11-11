@@ -57,13 +57,19 @@ export const needsStore = {
 
   async syncWithBackend(): Promise<Need[]> {
     try {
-      const res = await needsApiService.getFeed({ pageSize: 100, sort: "newest" });
+      const res = await needsApiService.getFeed({ pageSize: 100, sort: "newest", include_expired: true });
       if (res && Array.isArray(res.needs)) {
         const clean = res.needs.filter(
           (n: Need) => !MOCK_AUTHORS.includes(n.author) && !MOCK_AUTHORS.includes((n as any).user?.name || "")
         );
-        this.saveRawNeeds(clean);
-        return clean;
+        // Preserve any locally created needs so they never get wiped out on sync
+        const existingLocal = this.getRawNeeds();
+        const pendingLocal = existingLocal.filter(
+          (loc) => !clean.some((srv) => srv.id === loc.id || (srv.text === loc.text && srv.author === loc.author))
+        );
+        const merged = [...clean, ...pendingLocal];
+        this.saveRawNeeds(merged);
+        return merged;
       }
     } catch {
       // Backend offline or unreachable
@@ -117,7 +123,7 @@ export const needsStore = {
 
     const filtered = all.filter((need) => {
       if (blocked.includes(need.author)) return false;
-      if (need.expiresAt && need.expiresAt <= currentTime) return false;
+      if (need.status && need.status !== "active") return false;
 
       // CSC Location filtering (Country, State, City)
       if (options?.country && options.country.toLowerCase() !== "all") {

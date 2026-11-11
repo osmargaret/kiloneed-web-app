@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Image,
@@ -39,7 +40,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { NeedMedia, PrivacyOption } from "@/types/need";
 import { USER_INDUSTRY } from "@/services/needsStore";
-import { api } from "@/services/apiClient";
+import { api, getAuthToken } from "@/services/apiClient";
 
 interface PostData {
   text: string;
@@ -82,6 +83,7 @@ const EXPIRY_PRESETS = [
 ];
 
 export const CreatePost = ({ onPost }: CreatePostProps) => {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<
@@ -175,6 +177,13 @@ export const CreatePost = ({ onPost }: CreatePostProps) => {
       .toUpperCase() || "JD";
 
   const handlePost = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("Please sign in or create an account to post your need.");
+      navigate("/signin");
+      return;
+    }
+
     if (!text.trim() && mediaFiles.length === 0) {
       toast.error("Please enter a description or attach media to post your need.");
       return;
