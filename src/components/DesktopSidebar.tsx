@@ -89,21 +89,23 @@ export function DesktopSidebar() {
 
     fetchAllCounts();
     const iv = setInterval(fetchAllCounts, 5000);
+    window.addEventListener("kiloneed-notifications-updated", fetchAllCounts);
 
     // Pusher Echo Real-Time Listener
     const echo = getEcho();
+    let channel: any = null;
     if (echo) {
-      const channel = echo.channel("chat-global");
+      channel = echo.channel("chat-global");
       channel.listen(".message.sent", () => {
         fetchAllCounts();
       });
-      return () => {
-        clearInterval(iv);
-        channel.stopListening(".message.sent");
-      };
     }
 
-    return () => clearInterval(iv);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("kiloneed-notifications-updated", fetchAllCounts);
+      if (channel) channel.stopListening(".message.sent");
+    };
   }, [location.pathname]);
 
   const initials =
@@ -116,9 +118,14 @@ export function DesktopSidebar() {
 
   const handleSignOut = () => {
     clearAuthToken();
+    localStorage.removeItem("kiloneed_user_id");
     localStorage.removeItem("kiloneed_user_name");
     localStorage.removeItem("kiloneed_user_email");
     localStorage.removeItem("kiloneed_avatar");
+    localStorage.removeItem("kiloneed_notifications");
+    setUnreadNotifications(0);
+    setUnreadMessages(0);
+    setPendingConnections(0);
     setIsLoggedIn(false);
     toast.success("Signed out successfully!");
     navigate("/signin");

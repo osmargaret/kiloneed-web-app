@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { notificationsApiService } from "@/services/apiClient";
+import { notificationsApiService, getAuthToken } from "@/services/apiClient";
+import { getEcho } from "@/services/echo";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,33 +107,57 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>(getInitialNotifications);
 
   useEffect(() => {
-    notificationsApiService
-      .getNotifications()
-      .then((remoteNotifs) => {
-        if (Array.isArray(remoteNotifs)) {
-          const mapped: Notification[] = remoteNotifs.map((rn: any) => ({
-            id: String(rn.id),
-            type: (typeConfig[rn.type as NotificationType]
-              ? rn.type
-              : rn.type === "connection"
-              ? "connection_accepted"
-              : rn.type === "message"
-              ? "unread_message"
-              : "mention") as NotificationType,
-            title: rn.title,
-            description: rn.description || rn.message || "",
-            detail: rn.detail || rn.message || rn.description || "",
-            from: rn.from || "Kiloneed",
-            time: rn.time || "Just now",
-            read: Boolean(rn.read),
-          }));
-          setNotifications((prev) => {
-            const existingIds = new Set(mapped.map((m) => m.id));
-            return [...mapped, ...prev.filter((p) => !existingIds.has(p.id))];
-          });
-        }
-      })
-      .catch(() => {});
+    if (!getAuthToken()) {
+      setNotifications([]);
+      return;
+    }
+
+    const mapBackendType = (rawType: string): NotificationType => {
+      if (typeConfig[rawType as NotificationType]) return rawType as NotificationType;
+      if (rawType === "connection") return "connection_accepted";
+      if (rawType === "message" || rawType === "response") return "unread_message";
+      if (rawType === "comment") return "need_post";
+      if (rawType === "kyc_verified" || rawType === "payment" || rawType === "system") return "profile_approval";
+      return "mention";
+    };
+
+    const fetchNotifs = () => {
+      notificationsApiService
+        .getNotifications()
+        .then((remoteNotifs) => {
+          if (Array.isArray(remoteNotifs)) {
+            const mapped: Notification[] = remoteNotifs.map((rn: any) => ({
+              id: String(rn.id),
+              type: mapBackendType(rn.type),
+              title: rn.title,
+              description: rn.description || rn.message || "",
+              detail: rn.detail || rn.message || rn.description || "",
+              from: rn.from || "Kiloneed",
+              time: rn.time || "Just now",
+              read: Boolean(rn.read || rn.is_read),
+            }));
+            setNotifications(mapped);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchNotifs();
+    const iv = setInterval(fetchNotifs, 5000);
+
+    const echo = getEcho();
+    let channel: any = null;
+    if (echo) {
+      channel = echo.channel("chat-global");
+      channel.listen(".message.sent", () => {
+        fetchNotifs();
+      });
+    }
+
+    return () => {
+      clearInterval(iv);
+      if (channel) channel.stopListening(".message.sent");
+    };
   }, []);
 
   const filtered =
@@ -150,7 +175,10 @@ const Notifications = () => {
     );
     setSelectedNotification({ ...notif, read: true });
     if (/^\d+$/.test(String(notif.id))) {
-      notificationsApiService.markAsRead(notif.id).catch(() => {});
+      notificationsApiService
+        .markAsRead(notif.id)
+        .then(() => window.dispatchEvent(new Event("kiloneed-notifications-updated")))
+        .catch(() => {});
     }
   };
 
@@ -159,14 +187,20 @@ const Notifications = () => {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
     if (/^\d+$/.test(id)) {
-      notificationsApiService.markAsRead(id).catch(() => {});
+      notificationsApiService
+        .markAsRead(id)
+        .then(() => window.dispatchEvent(new Event("kiloneed-notifications-updated")))
+        .catch(() => {});
     }
     toast.success("Notification marked as read");
   };
 
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    notificationsApiService.markAllAsRead().catch(() => {});
+    notificationsApiService
+      .markAllAsRead()
+      .then(() => window.dispatchEvent(new Event("kiloneed-notifications-updated")))
+      .catch(() => {});
     toast.success("All notifications marked as read");
   };
 

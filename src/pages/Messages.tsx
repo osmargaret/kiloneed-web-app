@@ -66,7 +66,7 @@ type MessageItem = {
 type View = "list" | "guests" | "conversation";
 
 const Messages = () => {
-  const [activeTab, setActiveTab] = useState("needs");
+  const [activeTab, setActiveTab] = useState("all");
   const [view, setView] = useState<View>("list");
   const [needThreads, setNeedThreads] = useState<MessageThread[]>([]);
   const [commodityThreads, setCommodityThreads] = useState<MessageThread[]>([]);
@@ -469,9 +469,12 @@ const Messages = () => {
       }));
 
       const targetConvId = await resolveTargetConversationId();
-      if (targetConvId) {
-        await messagesApiService.sendMessage(targetConvId, msgText, uploadedUrl, uploadedType);
+      if (!targetConvId) {
+        toast.error("Unable to send: could not link conversation thread. Please try again.");
+        setIsSending(false);
+        return;
       }
+      await messagesApiService.sendMessage(targetConvId, msgText, uploadedUrl, uploadedType);
 
       setNewMessage("");
       setAttachedFile(null);
@@ -582,7 +585,15 @@ const Messages = () => {
   };
 
   const isDraft = selectedThread?.status === "draft";
-  const threads = activeTab === "needs" ? needThreads : commodityThreads;
+  const allThreads = Array.from(
+    new Map([...commodityThreads, ...needThreads].map((t) => [t.id, t])).values()
+  );
+  const threads =
+    activeTab === "all"
+      ? allThreads
+      : activeTab === "needs"
+      ? needThreads
+      : commodityThreads;
   const messages = selectedGuest ? conversations[selectedGuest.id] || [] : [];
 
   // Conversation view — full screen, hide bottom nav
@@ -859,14 +870,18 @@ const Messages = () => {
     <MobileLayout title="Messages" notificationCount={0}>
       <div className="space-y-4 p-4 pb-20">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="needs" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Needs Messages
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <MessageCircle className="h-4 w-4 shrink-0" />
+              All Chats
             </TabsTrigger>
-            <TabsTrigger value="commodities" className="flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              Marketplace Chats
+            <TabsTrigger value="needs" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Package className="h-4 w-4 shrink-0" />
+              Needs
+            </TabsTrigger>
+            <TabsTrigger value="commodities" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <ShoppingBag className="h-4 w-4 shrink-0" />
+              Marketplace
             </TabsTrigger>
           </TabsList>
 

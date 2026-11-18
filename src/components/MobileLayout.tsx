@@ -5,6 +5,7 @@ import { MobileDrawerMenu } from "./MobileDrawerMenu";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { notificationsApiService, getAuthToken } from "@/services/apiClient";
+import { getEcho } from "@/services/echo";
 
 interface MobileLayoutProps {
   title: string;
@@ -44,18 +45,39 @@ export function MobileLayout({
   const [unreadNotifs, setUnreadNotifs] = React.useState(0);
 
   React.useEffect(() => {
-    if (!getAuthToken()) return;
+    if (!getAuthToken()) {
+      setUnreadNotifs(0);
+      return;
+    }
     const fetchCount = () => {
       notificationsApiService
         .getNotifications()
         .then((res: any[]) => {
-          if (Array.isArray(res)) setUnreadNotifs(res.length);
+          if (Array.isArray(res)) {
+            const unread = res.filter((n: any) => !n.read && !n.is_read).length;
+            setUnreadNotifs(unread);
+          }
         })
         .catch(() => {});
     };
     fetchCount();
-    const interval = setInterval(fetchCount, 8000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchCount, 6000);
+    window.addEventListener("kiloneed-notifications-updated", fetchCount);
+
+    const echo = getEcho();
+    let channel: any = null;
+    if (echo) {
+      channel = echo.channel("chat-global");
+      channel.listen(".message.sent", () => {
+        fetchCount();
+      });
+    }
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("kiloneed-notifications-updated", fetchCount);
+      if (channel) channel.stopListening(".message.sent");
+    };
   }, [location.pathname]);
 
   // Gesture touch tracking for mobile
