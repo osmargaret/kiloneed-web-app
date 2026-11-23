@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Lock, User, Globe, MapPin, ChevronDown, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Globe, MapPin, ChevronDown, ArrowRight, ShieldCheck, RefreshCw } from "lucide-react";
 import { authService } from "@/services/authService";
 import {
   COUNTRIES,
@@ -23,6 +23,10 @@ const SignUp = () => {
   const [state, setState] = useState(DEFAULT_STATE);
   const [city, setCity] = useState(DEFAULT_CITY);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<"form" | "verify">("form");
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const availableStates = getStatesForCountry(country);
   const availableCities = getCitiesForState(country, state);
@@ -68,7 +72,7 @@ const SignUp = () => {
 
     try {
       const formattedLoc = [city, state, country].filter(Boolean).join(", ");
-      await authService.register({
+      const res = await authService.register({
         name: enteredName,
         email: enteredEmail,
         password,
@@ -82,14 +86,114 @@ const SignUp = () => {
       localStorage.setItem("kiloneed_city", city);
       localStorage.setItem("kiloneed_location", formattedLoc);
 
-      toast.success(`Welcome to Kiloneed, ${enteredName}!`);
-      navigate("/feed");
+      toast.success(`Verification code sent to ${enteredEmail}!`);
+      setStep("verify");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to create your account");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otp.trim();
+    if (code.length < 4) {
+      toast.error("Please enter the 6-digit verification code sent to your email");
+      return;
+    }
+    setVerifying(true);
+    try {
+      await authService.verifyEmail(email.trim(), code);
+      toast.success(`Welcome to Kiloneed, ${name.trim()}!`);
+      navigate("/feed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invalid or expired verification code");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setResending(true);
+    try {
+      await authService.resendVerification(email.trim());
+      toast.success(`New verification code sent to ${email.trim()}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend code");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (step === "verify") {
+    return (
+      <div className="min-h-screen w-full bg-[#04060d] text-white flex flex-col lg:flex-row relative overflow-x-hidden selection:bg-primary selection:text-white">
+        <AuthShowcasePanel mode="signup" />
+        <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-8 py-10 lg:py-16 relative z-10 overflow-y-auto">
+          <div className="w-full max-w-[420px] p-7 sm:p-9 rounded-3xl bg-slate-900/40 border border-white/[0.08] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            <div className="h-12 w-12 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary mb-4">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <h2 className="text-2xl font-black font-display text-white tracking-tight">
+              Verify Your Email
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+              We sent a 6-digit verification code to{" "}
+              <span className="text-white font-semibold">{email.trim()}</span>. Enter it below to
+              activate your account and receive your welcome message.
+            </p>
+
+            <form onSubmit={handleVerifyOtp} className="mt-6 space-y-4">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  6-Digit Verification Code
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="000000"
+                  autoFocus
+                  className="w-full h-12 px-4 rounded-xl bg-white/[0.04] border border-white/[0.1] text-center text-xl font-bold tracking-[0.4em] text-white placeholder:text-slate-600 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={verifying || otp.trim().length < 4}
+                className="w-full h-11 rounded-xl gradient-blue text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {verifying ? (
+                  <span>Verifying...</span>
+                ) : (
+                  <>
+                    <span>Verify & Continue</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-5 flex items-center justify-between text-xs text-slate-400">
+              <span>Didn&apos;t receive the code?</span>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resending}
+                className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} />
+                <span>{resending ? "Sending..." : "Resend Code"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#04060d] text-white flex flex-col lg:flex-row relative overflow-x-hidden selection:bg-primary selection:text-white">

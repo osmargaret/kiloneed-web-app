@@ -35,7 +35,13 @@ export const authService = {
     location?: string;
     industry?: string;
   }) {
-    const res = await api.post<{ message: string; user: UserProfile; token: string }>(
+    const res = await api.post<{
+      message: string;
+      user: UserProfile;
+      token: string;
+      requires_verification?: boolean;
+      otp_preview?: string;
+    }>(
       "/auth/register",
       data
     );
@@ -51,6 +57,20 @@ export const authService = {
       if (res.user.avatar) localStorage.setItem("kiloneed_avatar", res.user.avatar);
     }
     return res;
+  },
+
+  async verifyEmail(email: string, otp: string) {
+    return api.post<{ message: string; verified: boolean; user: UserProfile }>(
+      "/auth/verify-email",
+      { email, otp }
+    );
+  },
+
+  async resendVerification(email: string) {
+    return api.post<{ message: string; otp_preview?: string }>(
+      "/auth/resend-verification",
+      { email }
+    );
   },
 
   async login(credentials: { email: string; password: string }) {
