@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -9,10 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Store, Mail, Phone, MapPin, Globe, FileText, Package, Wrench,
-  Pencil, ArrowLeft, Tag, Clock, Star, Loader2,
+  Pencil, ArrowLeft, Tag, Clock, Star, Loader2, Camera,
 } from "lucide-react";
-import { authService, UserProfile } from "@/services/authService";
-import { productsApiService } from "@/services/apiClient";
+import { toast } from "sonner";
+import { authService } from "@/services/authService";
+import { api, productsApiService } from "@/services/apiClient";
 
 interface BusinessProfile {
   id: string;
@@ -49,6 +50,12 @@ export default function MyBusiness() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [avatarImage, setAvatarImage] = useState<string>(() => localStorage.getItem("kiloneed_avatar") || "");
+  const [coverImage, setCoverImage] = useState<string>(() => localStorage.getItem("kiloneed_cover_image") || "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -71,16 +78,23 @@ export default function MyBusiness() {
       if (!mounted) return;
       if (meRes?.user) {
         const u = meRes.user;
-        setProfile((prev) => prev || {
-          id: String(u.id),
-          fullName: u.name,
-          businessName: u.company || u.name,
-          email: u.email,
-          phone: u.phone,
-          category: u.industry || "General",
-          address: u.location || [u.city, u.state, u.country].filter(Boolean).join(", "),
-          description: u.bio || `Official store of ${u.name}`,
-          logo: u.avatar,
+        const resolvedAvatar = u.avatar || localStorage.getItem("kiloneed_avatar") || "";
+        if (resolvedAvatar) {
+          setAvatarImage(resolvedAvatar);
+          localStorage.setItem("kiloneed_avatar", resolvedAvatar);
+        }
+        setProfile((prev) => {
+          const base = prev || {
+            id: String(u.id),
+            fullName: u.name,
+            businessName: u.company || u.name,
+            email: u.email,
+            phone: u.phone,
+            category: u.industry || "General",
+            address: u.location || [u.city, u.state, u.country].filter(Boolean).join(", "),
+            description: u.bio || `Official store of ${u.name}`,
+          };
+          return { ...base, logo: resolvedAvatar || base.logo };
         });
 
         if (Array.isArray(allProducts)) {
@@ -115,6 +129,69 @@ export default function MyBusiness() {
   const products = myListings.filter((l) => (l.type ?? "product") === "product");
   const services = myListings.filter((l) => l.type === "service");
 
+  const readAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    toast.loading("Updating profile image...", { id: "biz-avatar" });
+    try {
+      let url = "";
+      try {
+        const up = await api.upload(file);
+        url = up.url;
+      } catch {
+        url = await readAsDataUrl(file);
+      }
+      setAvatarImage(url);
+      localStorage.setItem("kiloneed_avatar", url);
+      setProfile((prev) => {
+        if (!prev) return prev;
+        const next = { ...prev, logo: url };
+        localStorage.setItem("kiloneed_business", JSON.stringify(next));
+        return next;
+      });
+      await authService.updateProfile({ avatar: url }).catch(() => {});
+      toast.success("Business & profile image updated!", { id: "biz-avatar" });
+    } catch {
+      toast.error("Could not update image", { id: "biz-avatar" });
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    toast.loading("Updating cover image...", { id: "biz-cover" });
+    try {
+      let url = "";
+      try {
+        const up = await api.upload(file);
+        url = up.url;
+      } catch {
+        url = await readAsDataUrl(file);
+      }
+      setCoverImage(url);
+      localStorage.setItem("kiloneed_cover_image", url);
+      toast.success("Cover image updated!", { id: "biz-cover" });
+    } catch {
+      toast.error("Could not update cover image", { id: "biz-cover" });
+    } finally {
+      setUploadingCover(false);
+      e.target.value = "";
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -145,17 +222,79 @@ export default function MyBusiness() {
               </div>
             ) : (
               <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-6">
+                {/* Hidden file inputs for profile & cover photo */}
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverChange}
+                />
+
                 {/* Header card */}
                 <Card className="gradient-card border-border overflow-hidden">
-                  <div className="h-24 bg-gradient-to-r from-primary/30 to-accent/30" />
+                  {/* Cover Image / Banner */}
+                  <div className="relative h-36 sm:h-48 bg-gradient-to-r from-primary/30 via-blue-600/20 to-accent/30 group overflow-hidden">
+                    {coverImage ? (
+                      <img
+                        src={coverImage}
+                        alt="Business Cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
+                    <button
+                      type="button"
+                      onClick={() => coverInputRef.current?.click()}
+                      disabled={uploadingCover}
+                      className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-md border border-border text-xs font-medium text-foreground hover:bg-background transition-all shadow-sm cursor-pointer"
+                      title="Change cover photo"
+                    >
+                      {uploadingCover ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Camera className="h-3.5 w-3.5 text-primary" />
+                      )}
+                      <span>{coverImage ? "Change Cover" : "Add Cover Photo"}</span>
+                    </button>
+                  </div>
+
                   <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row gap-4 -mt-12 sm:-mt-16">
-                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-lg">
-                        {profile.logo ? <AvatarImage src={profile.logo} alt={profile.businessName} /> : null}
-                        <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                          {profile.businessName.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="flex flex-col sm:flex-row gap-4 -mt-14 sm:-mt-16 relative z-10">
+                      <div className="relative w-fit">
+                        <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-xl bg-card">
+                          {(avatarImage || profile.logo) ? (
+                            <AvatarImage
+                              src={avatarImage || profile.logo}
+                              alt={profile.businessName}
+                              className="object-cover"
+                            />
+                          ) : null}
+                          <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
+                            {profile.businessName.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <button
+                          type="button"
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-primary text-primary-foreground border-2 border-background shadow-md flex items-center justify-center hover:bg-primary/90 transition-transform hover:scale-105 cursor-pointer"
+                          title="Change profile image"
+                        >
+                          {uploadingAvatar ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Camera className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                       <div className="flex-1 min-w-0 sm:pt-12">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0">
