@@ -99,12 +99,29 @@ export function DesktopSidebar() {
       channel.listen(".message.sent", () => {
         fetchAllCounts();
       });
+      channel.listen(".notification.created", (e: any) => {
+        const currentId = localStorage.getItem("kiloneed_user_id");
+        const notif = e?.notification;
+        if (notif && currentId && String(notif.user_id) === String(currentId)) {
+          fetchAllCounts();
+          const seen: Set<string> = ((window as any).__seenNotifIds ||= new Set());
+          if (!seen.has(String(notif.id))) {
+            seen.add(String(notif.id));
+            toast.info(notif.title || "New Notification", {
+              description: notif.description || undefined,
+            });
+          }
+        }
+      });
     }
 
     return () => {
       clearInterval(iv);
       window.removeEventListener("kiloneed-notifications-updated", fetchAllCounts);
-      if (channel) channel.stopListening(".message.sent");
+      if (channel) {
+        channel.stopListening(".message.sent");
+        channel.stopListening(".notification.created");
+      }
     };
   }, [location.pathname]);
 

@@ -36,7 +36,7 @@ import {
 import { toast } from "sonner";
 import { Need, NeedChatMessage } from "@/types/need";
 import { needsStore } from "@/services/needsStore";
-import { needsApiService } from "@/services/apiClient";
+import { needsApiService, messagesApiService } from "@/services/apiClient";
 import { MentionModal } from "./MentionModal";
 
 interface NeedDetailModalProps {
@@ -128,6 +128,20 @@ export const NeedDetailModal: React.FC<NeedDetailModalProps> = ({
     try {
       await needsApiService.sendChat(need.id, msgText);
       needsStore.addResponse(need.id, msgText);
+
+      // Also record in Direct Messages (/messages) so it persists across logout/login
+      const recipientId = (need as any).user_id || need.authorId;
+      const currentUserId = localStorage.getItem("kiloneed_user_id");
+      if (recipientId && String(recipientId) !== String(currentUserId)) {
+        const convRes = await messagesApiService.startConversation(recipientId).catch(() => null);
+        if (convRes?.conversationId) {
+          const prefix = need.title ? `[Re: ${need.title.slice(0, 40)}] ` : "";
+          await messagesApiService
+            .sendMessage(convRes.conversationId, `${prefix}${msgText}`)
+            .catch(() => {});
+        }
+      }
+
       onUpdate?.();
       toast.success(`Message sent in real time to ${need.author}`);
     } catch {

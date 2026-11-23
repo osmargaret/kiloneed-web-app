@@ -332,6 +332,23 @@ export const groupsApiService = {
   async leaveGroup(groupId: number | string) {
     return api.post(`/groups/${groupId}/leave`);
   },
+
+  async getGroupPosts(groupId: number | string) {
+    return api.get<any[]>(`/groups/${groupId}/posts`);
+  },
+
+  async createGroupPost(groupId: number | string, text: string, mediaUrl?: string) {
+    return api.post<{ message: string; post: any }>(`/groups/${groupId}/posts`, {
+      text,
+      media_url: mediaUrl,
+    });
+  },
+
+  async updateMemberRole(groupId: number | string, memberId: number | string, role: "moderator" | "member" | "admin") {
+    return api.post<{ message: string; member: any }>(`/groups/${groupId}/members/${memberId}/role`, {
+      role,
+    });
+  },
 };
 
 // Direct Messages API Service

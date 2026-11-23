@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, groupsApiService, productsApiService, walletApiService } from "@/services/apiClient";
+import { getEcho } from "@/services/echo";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -199,18 +200,106 @@ const Groups = () => {
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [messageTargetUser, setMessageTargetUser] = useState("");
 
-  // Sync settings state when opening/switching viewGroup
+  // Sync settings state, fetch live group posts, and subscribe to real-time group channel
   useEffect(() => {
-    if (viewGroup) {
-      setEditTitle(viewGroup.title);
-      setEditDesc(viewGroup.description || "");
-      setEditCategory(viewGroup.category || "Electronics");
-      setEditType(viewGroup.type || "open");
-      setEditImage(viewGroup.image || "");
-      setEditDuesAmount(viewGroup.dues?.amount ? String(viewGroup.dues.amount) : "");
-      setEditDuesFreq(viewGroup.dues?.frequency || "monthly");
+    if (!viewGroup) return;
+    setEditTitle(viewGroup.title);
+    setEditDesc(viewGroup.description || "");
+    setEditCategory(viewGroup.category || "Electronics");
+    setEditType(viewGroup.type || "open");
+    setEditImage(viewGroup.image || "");
+    setEditDuesAmount(viewGroup.dues?.amount ? String(viewGroup.dues.amount) : "");
+    setEditDuesFreq(viewGroup.dues?.frequency || "monthly");
+
+    const gid = viewGroup.id;
+
+    // Fetch live posts from database
+    groupsApiService
+      .getGroupPosts(gid)
+      .then((remotePosts) => {
+        if (Array.isArray(remotePosts)) {
+          const mapped: GroupPostData[] = remotePosts.map((rp: any) => ({
+            id: String(rp.id),
+            author: rp.author || "Member",
+            avatar: rp.avatar || "MB",
+            text: rp.text,
+            time: rp.time || "Just now",
+            likes: rp.likes || 0,
+            liked: false,
+            saved: false,
+            shared: false,
+            comments: [],
+          }));
+          setGroupPostsMap((prev) => ({ ...prev, [gid]: mapped }));
+        }
+      })
+      .catch(() => {});
+
+    // Real-time Pusher Echo subscription for group activity
+    const echo = getEcho();
+    let channel: any = null;
+    if (echo) {
+      channel = echo.channel(`group.${gid}`);
+      channel.listen(".group.message", (e: any) => {
+        const data = e?.post;
+        if (!data) return;
+
+        if (data.event === "post_created" && data.post) {
+          const np = data.post;
+          setGroupPostsMap((prev) => {
+            const existing = prev[gid] || [];
+            if (existing.some((p) => String(p.id) === String(np.id))) return prev;
+            const mappedPost: GroupPostData = {
+              id: String(np.id),
+              author: np.author || "Member",
+              avatar: np.avatar || "MB",
+              text: np.text,
+              time: np.time || "Just now",
+              likes: np.likes || 0,
+              liked: false,
+              saved: false,
+              shared: false,
+              comments: [],
+            };
+            return { ...prev, [gid]: [mappedPost, ...existing] };
+          });
+        } else if (data.event === "member_joined" && data.member) {
+          const nm = data.member;
+          setViewGroup((prev) => {
+            if (!prev || prev.id !== gid) return prev;
+            if (prev.members.some((m) => m.id === nm.id)) return prev;
+            return {
+              ...prev,
+              membersCount: prev.membersCount + 1,
+              members: [...prev.members, nm],
+            };
+          });
+          setGroups((prev) =>
+            prev.map((g) =>
+              g.id === gid && !g.members.some((m) => m.id === nm.id)
+                ? { ...g, membersCount: g.membersCount + 1, members: [...g.members, nm] }
+                : g
+            )
+          );
+        } else if (data.event === "role_updated") {
+          setViewGroup((prev) =>
+            prev && prev.id === gid
+              ? {
+                  ...prev,
+                  members: prev.members.map((m) =>
+                    m.id === data.member_id ? { ...m, role: data.role } : m
+                  ),
+                }
+              : prev
+          );
+        }
+      });
     }
-  }, [viewGroup]);
+
+    return () => {
+      if (channel) channel.stopListening(".group.message");
+    };
+  }, [viewGroup?.id]);
 
   // Fetch real groups from backend
   const fetchGroups = () => {
@@ -426,6 +515,7 @@ const Groups = () => {
     try {
       await groupsApiService.joinGroup(id);
       toast.success("Successfully joined the group!");
+      fetchGroups();
     } catch (err: any) {
       toast.info(err?.message || "Join recorded");
     }
@@ -628,7 +718,7 @@ const Groups = () => {
     }
   };
 
-  const handleChangeRole = (groupId: number, memberId: number, newRole: MemberRole) => {
+  const handleChangeRole = async (groupId: number, memberId: number, newRole: MemberRole) => {
     setGroups((prev) => {
       const updated = prev.map((g) =>
         g.id === groupId
@@ -648,20 +738,29 @@ const Groups = () => {
           : prev
       );
     }
-    toast.success(`Role updated to ${newRole}`);
+
+    try {
+      await groupsApiService.updateMemberRole(groupId, memberId, newRole);
+      toast.success(`Role updated to ${newRole}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update role on server");
+      fetchGroups();
+    }
   };
 
   // ─── Post handlers scoped to active group ───
   const activeGroupPosts = viewGroup ? groupPostsMap[viewGroup.id] || [] : [];
 
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     if (!newPostText.trim() || !viewGroup) return;
+    const text = newPostText.trim();
     const currentUserName = localStorage.getItem("kiloneed_user_name") || "You";
-    const post: GroupPostData = {
-      id: `gp-${Date.now()}`,
+    const tempId = `gp-${Date.now()}`;
+    const optimisticPost: GroupPostData = {
+      id: tempId,
       author: currentUserName,
       avatar: currentUserName.substring(0, 2).toUpperCase(),
-      text: newPostText.trim(),
+      text,
       time: "Just now",
       likes: 0,
       liked: false,
@@ -673,13 +772,39 @@ const Groups = () => {
     setGroupPostsMap((prev) => {
       const updated = {
         ...prev,
-        [viewGroup.id]: [post, ...(prev[viewGroup.id] || [])],
+        [viewGroup.id]: [optimisticPost, ...(prev[viewGroup.id] || [])],
       };
       localStorage.setItem("kiloneed_group_posts_cache", JSON.stringify(updated));
       return updated;
     });
     setNewPostText("");
-    toast.success("Post published to group feed!");
+
+    try {
+      const res = await groupsApiService.createGroupPost(viewGroup.id, text);
+      if (res?.post) {
+        const realPost: GroupPostData = {
+          id: String(res.post.id),
+          author: res.post.author || currentUserName,
+          avatar: res.post.avatar || currentUserName.substring(0, 2).toUpperCase(),
+          text: res.post.text,
+          time: res.post.time || "Just now",
+          likes: res.post.likes || 0,
+          liked: false,
+          saved: false,
+          shared: false,
+          comments: [],
+        };
+        setGroupPostsMap((prev) => {
+          const list = (prev[viewGroup.id] || []).map((p) => (p.id === tempId ? realPost : p));
+          const updated = { ...prev, [viewGroup.id]: list };
+          localStorage.setItem("kiloneed_group_posts_cache", JSON.stringify(updated));
+          return updated;
+        });
+      }
+      toast.success("Post published to group feed!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to publish post to group");
+    }
   };
 
   const handleLikePost = (id: string) => {

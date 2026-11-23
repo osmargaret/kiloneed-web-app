@@ -152,11 +152,20 @@ const Notifications = () => {
       channel.listen(".message.sent", () => {
         fetchNotifs();
       });
+      channel.listen(".notification.created", (e: any) => {
+        const currentId = localStorage.getItem("kiloneed_user_id");
+        if (e?.notification && currentId && String(e.notification.user_id) === String(currentId)) {
+          fetchNotifs();
+        }
+      });
     }
 
     return () => {
       clearInterval(iv);
-      if (channel) channel.stopListening(".message.sent");
+      if (channel) {
+        channel.stopListening(".message.sent");
+        channel.stopListening(".notification.created");
+      }
     };
   }, []);
 

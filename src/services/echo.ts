@@ -1,5 +1,6 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
+import { TOKEN_KEY } from "./apiClient";
 
 declare global {
   interface Window {
@@ -14,14 +15,32 @@ const pusherKey = import.meta.env.VITE_PUSHER_APP_KEY || "";
 const pusherCluster = import.meta.env.VITE_PUSHER_APP_CLUSTER || "mt1";
 
 let echoInstance: Echo | null = null;
+let echoToken: string | null = null;
+
+export const resetEcho = () => {
+  if (echoInstance) {
+    try {
+      echoInstance.disconnect();
+    } catch {
+      // ignore
+    }
+    echoInstance = null;
+    echoToken = null;
+  }
+};
 
 export const getEcho = (): Echo | null => {
   if (!pusherKey) {
     return null;
   }
 
+  const token = localStorage.getItem(TOKEN_KEY) || "";
+  if (echoInstance && echoToken !== token) {
+    resetEcho();
+  }
+
   if (!echoInstance) {
-    const token = localStorage.getItem("kiloneed_token");
+    echoToken = token;
     const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
     const authEndpoint = apiBase.replace(/\/api\/?$/, "") + "/broadcasting/auth";
 

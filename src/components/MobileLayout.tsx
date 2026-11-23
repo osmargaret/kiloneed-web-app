@@ -71,12 +71,21 @@ export function MobileLayout({
       channel.listen(".message.sent", () => {
         fetchCount();
       });
+      channel.listen(".notification.created", (e: any) => {
+        const currentId = localStorage.getItem("kiloneed_user_id");
+        if (e?.notification && currentId && String(e.notification.user_id) === String(currentId)) {
+          fetchCount();
+        }
+      });
     }
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("kiloneed-notifications-updated", fetchCount);
-      if (channel) channel.stopListening(".message.sent");
+      if (channel) {
+        channel.stopListening(".message.sent");
+        channel.stopListening(".notification.created");
+      }
     };
   }, [location.pathname]);
 
