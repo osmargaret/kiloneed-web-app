@@ -27,7 +27,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { adsApiService, api } from "@/services/apiClient";
+import { adsApiService, api, getAuthToken } from "@/services/apiClient";
 import { AdItem } from "@/pages/Ads";
 
 interface CreateAdModalProps {
@@ -81,32 +81,50 @@ export const CreateAdModal: React.FC<CreateAdModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Fast local preview
     const localPreview = URL.createObjectURL(file);
     setImageUrl(localPreview);
-
     setIsUploading(true);
+    toast.loading("Uploading media to cloud...", { id: "ad-media-upload" });
+
     try {
       const res = await api.upload(file);
       if (res?.url) {
         setImageUrl(res.url);
-        toast.success("Image uploaded successfully");
+        toast.success("Media uploaded successfully!", { id: "ad-media-upload" });
+      } else {
+        throw new Error("Upload did not return a URL");
       }
-    } catch {
-      // Local preview is preserved
+    } catch (err: any) {
+      setImageUrl("");
+      toast.error(err?.message || "Media upload failed. Please try again or paste a valid URL.", {
+        id: "ad-media-upload",
+      });
     } finally {
       setIsUploading(false);
+      e.target.value = "";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!getAuthToken()) {
+      toast.error("Please sign in to launch an ad campaign.");
+      return;
+    }
+    if (isUploading) {
+      toast.info("Please wait for your media upload to finish...");
+      return;
+    }
     if (!title.trim()) {
       toast.error("Please enter a campaign title");
       return;
     }
     if (!description.trim()) {
       toast.error("Please enter a campaign description");
+      return;
+    }
+    if (imageUrl.startsWith("blob:")) {
+      toast.error("Media is still processing. Please wait a moment.");
       return;
     }
 
@@ -282,11 +300,20 @@ export const CreateAdModal: React.FC<CreateAdModalProps> = ({
 
             {imageUrl && (
               <div className="relative rounded-xl overflow-hidden border border-border/80 h-32 bg-muted/30 mb-2">
-                <img src={imageUrl} alt="Ad Preview" className="w-full h-full object-cover" />
+                {imageUrl.match(/\.(mp4|webm|mov)(\?|$)/i) || (adType === "Video & Text" && imageUrl.startsWith("blob:")) ? (
+                  <video src={imageUrl} controls className="w-full h-full object-cover" />
+                ) : (
+                  <img src={imageUrl} alt="Ad Preview" className="w-full h-full object-cover" />
+                )}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center gap-2 text-xs font-semibold text-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" /> Uploading...
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => setImageUrl("")}
-                  className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                  className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors cursor-pointer"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -297,7 +324,7 @@ export const CreateAdModal: React.FC<CreateAdModalProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={adType === "Video & Text" ? "video/*,image/*" : "image/*"}
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -307,10 +334,10 @@ export const CreateAdModal: React.FC<CreateAdModalProps> = ({
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="text-xs rounded-xl h-8 gap-1.5 shrink-0"
+                className="text-xs rounded-xl h-8 gap-1.5 shrink-0 cursor-pointer"
               >
-                <Upload className="h-3.5 w-3.5" />
-                Upload Image
+                {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {adType === "Video & Text" ? "Upload Media" : "Upload Image"}
               </Button>
               <Input
                 value={imageUrl}
